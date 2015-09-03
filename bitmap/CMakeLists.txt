@@ -11,5 +11,5 @@ install(FILES include/bitmap.h DESTINATION include)
 
 set(CMAKE_BUILD_TYPE Debug)
 enable_testing()
-add_executable(tester test/test.c)
-add_test(tester tester)
+add_executable(bitmap_tester test/test.c)
+add_test(tester bitmap_tester)

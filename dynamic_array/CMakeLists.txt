@@ -13,8 +13,8 @@ install(FILES include/dynamic_array.h DESTINATION include)
 
 set(CMAKE_BUILD_TYPE Debug)
 enable_testing()
-add_executable(tester test/tester.c)
-add_test(tester tester)
+add_executable(dyn_array_tester test/tester.c)
+add_test(tester dyn_array_tester)
 
 # testing like this just doesn't work well with what I have
 # since it's not written for CTest/Check
