@@ -6,7 +6,6 @@
 #include <stddef.h>
 #include <stdbool.h>
 #include <string.h>
-#include <strings.h> // Welp, there goes windows compatability
 
 typedef struct bitmap bitmap_t;
 
