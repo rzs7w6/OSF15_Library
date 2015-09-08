@@ -6,22 +6,56 @@ struct bitmap {
     size_t bit_count, byte_count;
 };
 
-void bitmap_set(bitmap_t *bitmap, size_t bit) { bitmap->data[bit >> 3] |= 0x01 << (bit & 0x07); }
+// lookup instead of always shifting bits. Should be faster? Confirmed: 10% faster
+// Also, using native int width because it should be faster as well. - Negligible/indeterminate
+const static uint8_t mask[] = { 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80 };
 
-void bitmap_reset(bitmap_t *bitmap, size_t bit) { bitmap->data[bit >> 3] &= ~(0x01 << (bit & 0x07)); }
+const static uint8_t invert_mask[] = { 0xFE, 0xFD, 0xFB, 0xF7, 0xEF, 0xDF, 0xBF, 0x7F};
+// I won't lie, I only knew 0xFE without getting a calculator
+// Way more testing than I should waste my time on suggested uint8_t was faster
+// but it may still be negligible/indeterminate.
+// Power's out and I'm on battery, so my machine may be sabotaging timings out of self-preservaton
+// It shouldn't matter since one of them being non-int-width is the limiting factor
+// At least making it uint8_t should lower the footprint?
+// (Nope? No diff in binary size, potentially due to gaps?)
 
-bool bitmap_test(bitmap_t *bitmap, size_t bit) { return bitmap->data[bit >> 3] & (0x01 << (bit & 0x07)); }
-bool bitmap_at(bitmap_t *bitmap, size_t bit) { return bitmap_test(bitmap, bit); }
+void bitmap_set(bitmap_t *const bitmap, const size_t bit) {
+    bitmap->data[bit >> 3] |= mask[bit & 0x07];
+}
 
-void bitmap_flip(bitmap_t *bitmap, size_t bit) { bitmap->data[bit >> 3] ^= (0x01 << (bit & 0x07)); }
+void bitmap_reset(bitmap_t *const bitmap, const size_t bit) {
+    bitmap->data[bit >> 3] &= invert_mask[bit & 0x07];
+}
 
-size_t bitmap_get_bits(bitmap_t *bitmap) { return bitmap->bit_count; }
-size_t bitmap_get_bytes(bitmap_t *bitmap) { return bitmap->byte_count; }
-const uint8_t *bitmap_export(bitmap_t *bitmap) { return bitmap->data; }
+bool bitmap_test(const bitmap_t *const bitmap, const size_t bit) {
+    return bitmap->data[bit >> 3] & mask[bit & 0x07];
+}
 
-void bitmap_format(bitmap_t *bitmap, uint8_t pattern) { memset(bitmap->data, pattern, bitmap->byte_count); }
+bool bitmap_at(const bitmap_t *const bitmap, const  size_t bit) {
+    return bitmap_test(bitmap, bit);
+}
 
-bitmap_t *bitmap_initialize(size_t n_bits) {
+void bitmap_flip(bitmap_t *const bitmap, const size_t bit) {
+    bitmap->data[bit >> 3] ^= mask[bit & 0x07];
+}
+
+size_t bitmap_get_bits(const bitmap_t *const bitmap) {
+    return bitmap->bit_count;
+}
+
+size_t bitmap_get_bytes(const bitmap_t *const bitmap) {
+    return bitmap->byte_count;
+}
+
+const uint8_t *bitmap_export(const bitmap_t *const bitmap) {
+    return bitmap->data;
+}
+
+void bitmap_format(bitmap_t *const bitmap, const uint8_t pattern) {
+    memset(bitmap->data, pattern, bitmap->byte_count);
+}
+
+bitmap_t *bitmap_initialize(const size_t n_bits) {
     if (n_bits) { // must be non-zero
         bitmap_t *bitmap = (bitmap_t *) malloc(sizeof(bitmap_t));
         if (bitmap) {
@@ -40,7 +74,7 @@ bitmap_t *bitmap_initialize(size_t n_bits) {
     return NULL;
 }
 
-bitmap_t *bitmap_import(size_t n_bits, uint8_t *bitmap_data) {
+bitmap_t *bitmap_import(const size_t n_bits, const uint8_t *const bitmap_data) {
     bitmap_t *bitmap = bitmap_initialize(n_bits);
     if (bitmap && bitmap_data) {
         memcpy(bitmap->data, bitmap_data, bitmap->byte_count);
@@ -57,29 +91,27 @@ void bitmap_destroy(bitmap_t *bitmap) {
     }
 }
 
-/*
-size_t bitmap_ffs(bitmap_t *bitmap) {
+
+size_t bitmap_ffs(const bitmap_t *const bitmap) {
     if (bitmap) {
-        size_t bytes = bitmap->byte_count;
-        size_t index = 0;
-        size_t position = 0;
-        while (bitmap->data[index] == 0 && ++index < bytes) {}
-        // either it wasn't found (index == bytes)
-        // or we're at somewhere of interest
-        // issue is, if we're at an interesting byte, it may not be complete.
-
-        // this is starting to look gross, rewrite later
-
+        // I've spent over an hour trying to write it in a smart way.
+        // I give up.
+        size_t result = 0;
+        for (; result < bitmap->bit_count && !bitmap_test(bitmap, result); ++result) {}
+        return (result == bitmap->bit_count ? SIZE_MAX : result);
     }
-    return 0;
+    return SIZE_MAX;
 }
 
-size_t bitmap_ffz(bitmap_t *bitmap) {
+size_t bitmap_ffz(const bitmap_t *const bitmap) {
     if (bitmap) {
-
+        // I've spent over an hour trying to write it in a smart way.
+        // I give up.
+        size_t result = 0;
+        for (; result < bitmap->bit_count && bitmap_test(bitmap, result); ++result) {}
+        return (result == bitmap->bit_count ? SIZE_MAX : result);
     }
-    return 0;
+    return SIZE_MAX;
 }
 
 // fls flz?
-*/
