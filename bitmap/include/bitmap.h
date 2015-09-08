@@ -50,7 +50,7 @@ const uint8_t *bitmap_export(const bitmap_t *const bitmap);
 bitmap_t *bitmap_import(const size_t n_bits, const  uint8_t *const bitmap_data);
 
 // Creates a bitmap to contain n bits (zero initialized)
-bitmap_t *bitmap_initialize(const size_t n_bits);
+bitmap_t *bitmap_create(const size_t n_bits);
 
 // Destructs and destroys bitmap object
 void bitmap_destroy(bitmap_t *bitmap);

@@ -55,7 +55,7 @@ void bitmap_format(bitmap_t *const bitmap, const uint8_t pattern) {
     memset(bitmap->data, pattern, bitmap->byte_count);
 }
 
-bitmap_t *bitmap_initialize(const size_t n_bits) {
+bitmap_t *bitmap_create(const size_t n_bits) {
     if (n_bits) { // must be non-zero
         bitmap_t *bitmap = (bitmap_t *) malloc(sizeof(bitmap_t));
         if (bitmap) {
@@ -75,7 +75,7 @@ bitmap_t *bitmap_initialize(const size_t n_bits) {
 }
 
 bitmap_t *bitmap_import(const size_t n_bits, const uint8_t *const bitmap_data) {
-    bitmap_t *bitmap = bitmap_initialize(n_bits);
+    bitmap_t *bitmap = bitmap_create(n_bits);
     if (bitmap && bitmap_data) {
         memcpy(bitmap->data, bitmap_data, bitmap->byte_count);
         return bitmap;

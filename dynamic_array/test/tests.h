@@ -6,7 +6,7 @@
 #include "../src/dynamic_array.c"
 
 /*
-    dynamic_array_t *dynamic_array_initialize(size_t capacity, size_t data_type_size, void (*destruct_func)(void *));
+    dynamic_array_t *dynamic_array_create(size_t capacity, size_t data_type_size, void (*destruct_func)(void *));
         1. NORMAL, capacity 0, assert 16
         2. NORMAL, capacity 15, assert 16
         3. NORMAL, capacity 16, assert 16
@@ -226,7 +226,7 @@ void run_basic_tests_a() {
 
     // CONSTRUCTOR / DESTRUCTOR
     // 1 & 7 CONSTRUCTOR
-    dyn_a = dynamic_array_initialize(0, 4, NULL);
+    dyn_a = dynamic_array_create(0, 4, NULL);
     assert(dyn_a);
     assert(dyn_a->size == 0);
     assert(dyn_a->capacity == 16);
@@ -239,7 +239,7 @@ void run_basic_tests_a() {
     dynamic_array_destroy(NULL);
 
     // 2 CONSTRUCTOR
-    dyn_a = dynamic_array_initialize(15, 5, &block_destructor);
+    dyn_a = dynamic_array_create(15, 5, &block_destructor);
     assert(dyn_a);
     assert(dyn_a->size == 0);
     assert(dyn_a->capacity == 16);
@@ -250,7 +250,7 @@ void run_basic_tests_a() {
     dynamic_array_destroy(dyn_a);
 
     // 3 CONSTRUCTOR
-    dyn_a = dynamic_array_initialize(16, 8, &block_destructor);
+    dyn_a = dynamic_array_create(16, 8, &block_destructor);
     assert(dyn_a);
     assert(dyn_a->size == 0);
     assert(dyn_a->capacity == 16);
@@ -261,7 +261,7 @@ void run_basic_tests_a() {
     dynamic_array_destroy(dyn_a);
 
     // 4 CONSTRUCTOR
-    dyn_a = dynamic_array_initialize(17, 4, &block_destructor);
+    dyn_a = dynamic_array_create(17, 4, &block_destructor);
     assert(dyn_a);
     assert(dyn_a->size == 0);
     assert(dyn_a->capacity == 32);
@@ -272,7 +272,7 @@ void run_basic_tests_a() {
     dynamic_array_destroy(dyn_a);
 
     // 5 CONSTRUCTOR
-    dyn_a = dynamic_array_initialize(DYN_MAX_CAPACITY - 1, 4, &block_destructor);
+    dyn_a = dynamic_array_create(DYN_MAX_CAPACITY - 1, 4, &block_destructor);
 
     assert(dyn_a);
     assert(dyn_a->size == 0);
@@ -284,7 +284,7 @@ void run_basic_tests_a() {
     dynamic_array_destroy(dyn_a);
 
     // 6 CONSTRUCTOR
-    dyn_a = dynamic_array_initialize(DYN_MAX_CAPACITY, 4, &block_destructor);
+    dyn_a = dynamic_array_create(DYN_MAX_CAPACITY, 4, &block_destructor);
 
     assert(dyn_a);
     assert(dyn_a->size == 0);
@@ -296,11 +296,11 @@ void run_basic_tests_a() {
     dynamic_array_destroy(dyn_a);
 
     // 8 CONSTRUCTOR
-    dyn_a = dynamic_array_initialize(DYN_MAX_CAPACITY + 1, 4, &block_destructor);
+    dyn_a = dynamic_array_create(DYN_MAX_CAPACITY + 1, 4, &block_destructor);
     assert(!dyn_a);
 
     // 9 CONSTRUCTOR
-    dyn_a = dynamic_array_initialize(16, 0, &block_destructor);
+    dyn_a = dynamic_array_create(16, 0, &block_destructor);
     assert(!dyn_a);
 
     // CONSTRUCTOR TESTS COMPLETE
@@ -309,7 +309,7 @@ void run_basic_tests_a() {
     // PUSH_FRONT, FRONT, SIZE, CLEAR, DESTRUCTOR
     // so basic operations can be used
 
-    dyn_a = dynamic_array_initialize(0, DATA_BLOCK_SIZE, NULL);
+    dyn_a = dynamic_array_create(0, DATA_BLOCK_SIZE, NULL);
     assert(dyn_a);
 
     // 2 & 3 FRONT
@@ -368,7 +368,7 @@ void run_basic_tests_a() {
     // 7 AT
     assert(dynamic_array_at(dyn_a, 1) == NULL);
 
-    dyn_b = dynamic_array_initialize(0, DATA_BLOCK_SIZE, &block_destructor);
+    dyn_b = dynamic_array_create(0, DATA_BLOCK_SIZE, &block_destructor);
     assert(dyn_b);
     // 2 BACK
     assert(dynamic_array_back(dyn_b) == NULL);
@@ -425,7 +425,7 @@ void run_basic_tests_a() {
 
     // DESTRUCTOR TESTS COMPLETE
 
-    dyn_a = dynamic_array_initialize(0, DATA_BLOCK_SIZE, NULL);
+    dyn_a = dynamic_array_create(0, DATA_BLOCK_SIZE, NULL);
     assert(dyn_a);
     while (dyn_a->size != 16) {
         assert(dynamic_array_push_front(dyn_a, DATA_BLOCKS[0]));
@@ -459,9 +459,9 @@ void run_basic_tests_b() {
     destruct_counter = 0;
     dynamic_array_t *dyn_a, *dyn_b;
 
-    dyn_a = dynamic_array_initialize(0, DATA_BLOCK_SIZE, NULL);
+    dyn_a = dynamic_array_create(0, DATA_BLOCK_SIZE, NULL);
     assert(dyn_a);
-    dyn_b = dynamic_array_initialize(0, DATA_BLOCK_SIZE, &block_destructor);
+    dyn_b = dynamic_array_create(0, DATA_BLOCK_SIZE, &block_destructor);
     assert(dyn_b);
 
     // 2 POP_FRONT
@@ -661,9 +661,9 @@ void run_basic_tests_c() {
     uint8_t extraction_point[DATA_BLOCK_SIZE];
     destruct_counter = 0;
 
-    dyn_a = dynamic_array_initialize(0, DATA_BLOCK_SIZE, NULL);
+    dyn_a = dynamic_array_create(0, DATA_BLOCK_SIZE, NULL);
     assert(dyn_a);
-    dyn_b = dynamic_array_initialize(0, DATA_BLOCK_SIZE, &block_destructor);
+    dyn_b = dynamic_array_create(0, DATA_BLOCK_SIZE, &block_destructor);
     assert(dyn_b);
 
     // 4 INSERT

@@ -13,8 +13,8 @@ typedef struct dynamic_array dynamic_array_t;
 // etc
 
 
-// Initializes a dyn_array with the desired capacity (not size!), object size, and optional destructor (NULL to disable)
-dynamic_array_t *dynamic_array_initialize(const size_t capacity, const size_t data_type_size, void (*destruct_func)(void *));
+// Creates a dyn_array with the desired capacity (not size!), object size, and optional destructor (NULL to disable)
+dynamic_array_t *dynamic_array_create(const size_t capacity, const size_t data_type_size, void (*destruct_func)(void *));
 
 // Creates a dynamic array from a standard array
 dynamic_array_t *dynamic_array_import(void *const data, const size_t count, const size_t data_type_size, void (*destruct_func)(void *));

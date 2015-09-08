@@ -64,8 +64,8 @@
     18. 0 n_bits
     19. NULL data pointer
 
-    // Creates a bitmap to contain n bits (zero initialized)
-    bitmap *bitmap_initialize(size_t n_bits);
+    // Creates a bitmap to contain n bits (zero created)
+    bitmap *bitmap_create(size_t n_bits);
 
     20. Test normal operation
     21. 0 bit size
@@ -114,7 +114,7 @@ void bitmap_test_a() {
 
     // INIT/DESTRUCT to get them out of the way
     // 20
-    assert(bitmap_A = bitmap_initialize(test_bit_count));
+    assert(bitmap_A = bitmap_create(test_bit_count));
     assert(bitmap_A->data); // Can't do much with this...
     assert(bitmap_A->bit_count == test_bit_count);
     assert(bitmap_A->byte_count == test_byte_count);
@@ -123,11 +123,11 @@ void bitmap_test_a() {
     assert(memcmp_fixed(bitmap_export(bitmap_A), 0x00, test_byte_count));
 
     // 21
-    assert(bitmap_initialize(0) == NULL);
+    assert(bitmap_create(0) == NULL);
 
     // 22
     // Should fail wherever we go. Probably. Hmm.
-    // assert(bitmap_initialize(SIZE_MAX) == NULL);
+    // assert(bitmap_create(SIZE_MAX) == NULL);
 
     // 24
     bitmap_destroy(NULL);
@@ -136,7 +136,7 @@ void bitmap_test_a() {
 
     // INIT/DESTROY tested and clear for unchecked use
 
-    bitmap_A = bitmap_initialize(test_bit_count);
+    bitmap_A = bitmap_create(test_bit_count);
 
     // SET
 
@@ -496,7 +496,7 @@ void bitmap_test_b() {
     bitmap_t *bitmap_A;
     const size_t test_bit_count = 58;
 
-    bitmap_A = bitmap_initialize(test_bit_count);
+    bitmap_A = bitmap_create(test_bit_count);
     assert(bitmap_A);
 
     assert(bitmap_ffs(bitmap_A) == SIZE_MAX);

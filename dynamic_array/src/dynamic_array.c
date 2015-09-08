@@ -59,7 +59,7 @@ bool dyn_request_size_increase(dynamic_array_t *const dyn_array, const size_t in
 
 
 
-dynamic_array_t *dynamic_array_initialize(const size_t capacity, const size_t data_type_size, void (*destruct_func)(void *)) {
+dynamic_array_t *dynamic_array_create(const size_t capacity, const size_t data_type_size, void (*destruct_func)(void *)) {
     if (data_type_size && capacity <= DYN_MAX_CAPACITY) {
         dynamic_array_t *dyn_array = (dynamic_array_t *) malloc(sizeof(dynamic_array_t));
         if (dyn_array) {
@@ -91,8 +91,8 @@ dynamic_array_t *dynamic_array_import(void *const data, const size_t count, cons
     dynamic_array_t *dyn_array = NULL;
     // literally could not give us an overlapping pointer unless they guessed it
     // I'd just do a memcpy here instead of dyn_shift, but the dyn_shift branch for this is
-    // short. DYN_SHIFT CANNOT fail if initialize worked properly, but we'll cleanup if it did anyway
-    if (data && (dyn_array = dynamic_array_initialize(count, data_type_size, destruct_func))) {
+    // short. DYN_SHIFT CANNOT fail if create worked properly, but we'll cleanup if it did anyway
+    if (data && (dyn_array = dynamic_array_create(count, data_type_size, destruct_func))) {
         if (count && !dyn_shift(dyn_array, 0, count, CREATE_GAP, data)) {
             dynamic_array_destroy(dyn_array);
             dyn_array = NULL;
