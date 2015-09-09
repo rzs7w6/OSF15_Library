@@ -1,8 +1,9 @@
 #include "../include/bitmap.h"
 
 struct bitmap {
-    uint8_t *data;
     uint8_t leftover_bits;
+
+    uint8_t *data;
     size_t bit_count, byte_count;
 };
 
@@ -83,6 +84,13 @@ bitmap_t *bitmap_import(const size_t n_bits, const uint8_t *const bitmap_data) {
     free(bitmap);
     return NULL;
 }
+
+/*
+bitmap_t *bitmap_overlay(const size_t n_bits, uint8_t * const bitmap_data) {
+    // use an existing data block
+    // add field to struct that indicated that the pointer HSOULD NOT be freed
+}
+*/
 
 void bitmap_destroy(bitmap_t *bitmap) {
     if (bitmap) {
