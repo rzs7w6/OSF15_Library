@@ -49,7 +49,7 @@ dynamic_array_t *dynamic_array_create(const size_t capacity, const size_t data_t
 /// \param destruct_func Optional destructor (NULL to disable)
 /// \return new dynamic array pointer, NULL on error
 ///
-dynamic_array_t *dynamic_array_import(void *const data, const size_t count, const size_t data_type_size, void (*destruct_func)(void *));
+dynamic_array_t *dynamic_array_import(const void *const data, const size_t count, const size_t data_type_size, void (*destruct_func)(void *));
 
 ///
 /// Returns an internal pointer to the data array for export
@@ -89,7 +89,7 @@ void *dynamic_array_front(const dynamic_array_t *const dyn_array);
 /// \param object the object to insert
 /// \return bool representing success of the operation
 ///
-bool dynamic_array_push_front(dynamic_array_t *const dyn_array, void *const object);
+bool dynamic_array_push_front(dynamic_array_t *const dyn_array, const void *const object);
 
 ///
 /// Removes and optionally destructs the object at the front of the array, decreasing the container size by one
@@ -123,7 +123,7 @@ void *dynamic_array_back(const dynamic_array_t *const dyn_array);
 /// \param object the object to insert
 /// \return bool representing success of the operation
 ///
-bool dynamic_array_push_back(dynamic_array_t *const dyn_array, void *const object);
+bool dynamic_array_push_back(dynamic_array_t *const dyn_array, const void *const object);
 
 ///
 /// Removes and optionally destructs the object at the back of the array
@@ -160,7 +160,20 @@ void *dynamic_array_at(const dynamic_array_t *const dyn_array, const size_t inde
 /// \return bool representing success of the operation
 ///
 bool dynamic_array_insert(dynamic_array_t *const dyn_array, const size_t index,
-                          void *const object);
+                          const void *const object);
+
+///
+/// Inserts the given object into the correct sorted position
+///  increasing the container size by one
+/// and moving any contents beyond the sorted position down one
+/// Note: calling this on an unsorted array will insert it... somewhere
+/// \param dyn_array the dynamic array
+/// \param object the object to insert
+/// \param compare the comparison function
+/// \return bool representing success of the operation
+///
+bool dynamic_array_insert_sorted(dynamic_array_t *const dyn_array, const void *const object,
+                                 int (*compare)(const void *, const void *));
 
 ///
 /// Removes and optionally destructs the object at the given index
@@ -201,5 +214,17 @@ bool dynamic_array_empty(const dynamic_array_t *const dyn_array);
 /// \return the size of the array, 0 on error
 ///
 size_t dynamic_array_size(const dynamic_array_t *const dyn_array);
+
+///
+/// Sorts the array according to the given comparator function
+/// compare(x,y) < 0 iff x < y
+/// compare(x,y) = 0 iff x == y
+/// compare(x,y) > 0 iff y > x
+/// Sort is not guarenteed to be stable
+/// \param dyn_array the dynamic array
+/// \param compare the comparison function
+/// \return bool representing success of the operation
+///
+bool dynamic_array_sort(dynamic_array_t *const dyn_array, int (*compare)(const void *, const void *));
 
 #endif

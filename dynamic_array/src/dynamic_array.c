@@ -86,14 +86,14 @@ dynamic_array_t *dynamic_array_create(const size_t capacity, const size_t data_t
 }
 
 // Creates a dynamic array from a standard array
-dynamic_array_t *dynamic_array_import(void *const data, const size_t count, const size_t data_type_size, void (*destruct_func)(void *)) {
+dynamic_array_t *dynamic_array_import(const void *const data, const size_t count, const size_t data_type_size, void (*destruct_func)(void *)) {
     // Oh boy I'm going to be lazy with this
     dynamic_array_t *dyn_array = NULL;
     // literally could not give us an overlapping pointer unless they guessed it
     // I'd just do a memcpy here instead of dyn_shift, but the dyn_shift branch for this is
     // short. DYN_SHIFT CANNOT fail if create worked properly, but we'll cleanup if it did anyway
     if (data && (dyn_array = dynamic_array_create(count, data_type_size, destruct_func))) {
-        if (count && !dyn_shift(dyn_array, 0, count, CREATE_GAP, data)) {
+        if (count && !dyn_shift(dyn_array, 0, count, CREATE_GAP, (void *const) data)) {
             dynamic_array_destroy(dyn_array);
             dyn_array = NULL;
         }
@@ -132,10 +132,10 @@ void *dynamic_array_front(const dynamic_array_t *const dyn_array) {
     return NULL;
 }
 
-bool dynamic_array_push_front(dynamic_array_t *const dyn_array, void *const object) {
+bool dynamic_array_push_front(dynamic_array_t *const dyn_array, const void *const object) {
     //dyn_shift(dynamic_array_t* dyn_array, size_t position, size_t count, DYN_SHIFT_MODE mode)
     // make sure to check pointer FIRST, shift does stuff to the structure that we don't want to have to undo
-    return object && dyn_shift(dyn_array, 0, 1, CREATE_GAP, object);
+    return object && dyn_shift(dyn_array, 0, 1, CREATE_GAP, (void *const)object);
 }
 
 bool dynamic_array_pop_front(dynamic_array_t *const dyn_array) {
@@ -163,8 +163,8 @@ void *dynamic_array_back(const dynamic_array_t *const dyn_array) {
     return NULL;
 }
 
-bool dynamic_array_push_back(dynamic_array_t *const dyn_array, void *const object) {
-    return object && dyn_array && dyn_shift(dyn_array, dyn_array->size, 1, CREATE_GAP, object);
+bool dynamic_array_push_back(dynamic_array_t *const dyn_array, const void *const object) {
+    return object && dyn_array && dyn_shift(dyn_array, dyn_array->size, 1, CREATE_GAP, (void *const)object);
 }
 
 bool dynamic_array_pop_back(dynamic_array_t *const dyn_array) {
@@ -198,10 +198,22 @@ void *dynamic_array_at(const dynamic_array_t *const dyn_array, const size_t inde
     return NULL;
 }
 
-bool dynamic_array_insert(dynamic_array_t *const dyn_array, const size_t index, void *const object) {
+bool dynamic_array_insert(dynamic_array_t *const dyn_array, const size_t index, const void *const object) {
     // putting object at INDEX
     // so we shift a gap at INDEX
-    return object && dyn_shift(dyn_array, index, 1, CREATE_GAP, object);
+    return object && dyn_shift(dyn_array, index, 1, CREATE_GAP, (void *const)object);
+}
+
+bool dynamic_array_insert_sorted(dynamic_array_t *const dyn_array, const void *const object,
+                                 int (*compare)(const void *, const void *)) {
+    if (dyn_array && dyn_array->size && compare && object){
+        size_t ordered_position = 0;
+        while (compare(object,DYN_ARRAY_POSITION(dyn_array,ordered_position)) < 0) {
+            ++ordered_position;
+        }
+        return dyn_shift(dyn_array, ordered_position, 1, CREATE_GAP, (void * const) object);
+    }
+    return false;
 }
 
 bool dynamic_array_erase(dynamic_array_t *const dyn_array, const size_t index) {
@@ -234,6 +246,17 @@ size_t dynamic_array_size(const dynamic_array_t *const dyn_array) {
 
 }
 
+
+
+bool dynamic_array_sort(dynamic_array_t *const dyn_array, int (*compare)(const void *, const void *)) {
+    // hah, turns out there's a quicksort in cstdlib.
+    // and it works exactly like we want it to
+    if (dyn_array && dyn_array->size > 1 && compare) {
+        qsort(dyn_array->array, dyn_array->size, dyn_array->data_size, compare);
+        return true;
+    }
+    return false;
+}
 
 
 
