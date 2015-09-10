@@ -32,10 +32,6 @@ bool bitmap_test(const bitmap_t *const bitmap, const size_t bit) {
     return bitmap->data[bit >> 3] & mask[bit & 0x07];
 }
 
-bool bitmap_at(const bitmap_t *const bitmap, const  size_t bit) {
-    return bitmap_test(bitmap, bit);
-}
-
 void bitmap_flip(bitmap_t *const bitmap, const size_t bit) {
     bitmap->data[bit >> 3] ^= mask[bit & 0x07];
 }
@@ -88,7 +84,7 @@ bitmap_t *bitmap_import(const size_t n_bits, const uint8_t *const bitmap_data) {
 /*
 bitmap_t *bitmap_overlay(const size_t n_bits, uint8_t * const bitmap_data) {
     // use an existing data block
-    // add field to struct that indicated that the pointer HSOULD NOT be freed
+    // add field to struct that indicated that the pointer SHOULD NOT be freed
 }
 */
 
