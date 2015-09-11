@@ -13,4 +13,4 @@ set(CMAKE_COLOR_MAKEFILE ON)
 #endif()
 
 add_subdirectory(bitmap)
-add_subdirectory(dynamic_array)
+add_subdirectory(dyn_array)

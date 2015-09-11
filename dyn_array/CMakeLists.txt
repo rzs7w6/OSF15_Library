@@ -1,13 +1,13 @@
 cmake_minimum_required (VERSION 2.8.0)
-project (dynamic_array)
+project (dyn_array)
 
 set(CMAKE_C_FLAGS "${CMAKE_CPP_FLAGS} -std=c99 -Wall -Werror")
 set(CMAKE_BUILD_TYPE RelWithDebInfo)
 
-add_library(dynamic_array SHARED src/dynamic_array.c)
+add_library(dyn_array SHARED src/dyn_array.c)
 
-install(TARGETS dynamic_array DESTINATION lib)
-install(FILES include/dynamic_array.h DESTINATION include)
+install(TARGETS dyn_array DESTINATION lib)
+install(FILES include/dyn_array.h DESTINATION include)
 
 # http://www.cmake.org/Wiki/CMakeEmulateMakeCheck
 

@@ -1,6 +1,6 @@
-#include "../include/dynamic_array.h"
+#include "../include/dyn_array.h"
 
-struct dynamic_array {
+struct dyn_array {
     size_t capacity;
     size_t size;
     size_t data_size;
@@ -49,19 +49,16 @@ struct dynamic_array {
 #define DYN_SIZE_N_ELEMS(dyn_array_ptr, n) (dyn_array_ptr->data_size * (n))
 
 
-/* private function prototypes */
+// Modes of operation for dyn_shift
 typedef enum {CREATE_GAP = 0x01, FILL_GAP = 0x02, FILL_GAP_DESTRUCT = 0x06} DYN_SHIFT_MODE;
 
-bool dyn_shift(dynamic_array_t *const dyn_array, const size_t position, const size_t count, const  DYN_SHIFT_MODE mode, void *const data_location);
-
-// Checks to see if the object can handle an increase in size (and optionally increases capacity)
-bool dyn_request_size_increase(dynamic_array_t *const dyn_array, const size_t increment);
+// The core of any insert/remove operation, check the impl for details
+bool dyn_shift(dyn_array_t *const dyn_array, const size_t position, const size_t count, const  DYN_SHIFT_MODE mode, void *const data_location);
 
 
-
-dynamic_array_t *dynamic_array_create(const size_t capacity, const size_t data_type_size, void (*destruct_func)(void *)) {
+dyn_array_t *dyn_array_create(const size_t capacity, const size_t data_type_size, void (*destruct_func)(void *)) {
     if (data_type_size && capacity <= DYN_MAX_CAPACITY) {
-        dynamic_array_t *dyn_array = (dynamic_array_t *) malloc(sizeof(dynamic_array_t));
+        dyn_array_t *dyn_array = (dyn_array_t *) malloc(sizeof(dyn_array_t));
         if (dyn_array) {
             // would have inf loop if requested size was between DYN_MAX_CAPACITY
             // and SIZE_MAX
@@ -86,15 +83,15 @@ dynamic_array_t *dynamic_array_create(const size_t capacity, const size_t data_t
 }
 
 // Creates a dynamic array from a standard array
-dynamic_array_t *dynamic_array_import(const void *const data, const size_t count, const size_t data_type_size, void (*destruct_func)(void *)) {
+dyn_array_t *dyn_array_import(const void *const data, const size_t count, const size_t data_type_size, void (*destruct_func)(void *)) {
     // Oh boy I'm going to be lazy with this
-    dynamic_array_t *dyn_array = NULL;
+    dyn_array_t *dyn_array = NULL;
     // literally could not give us an overlapping pointer unless they guessed it
     // I'd just do a memcpy here instead of dyn_shift, but the dyn_shift branch for this is
     // short. DYN_SHIFT CANNOT fail if create worked properly, but we'll cleanup if it did anyway
-    if (data && (dyn_array = dynamic_array_create(count, data_type_size, destruct_func))) {
+    if (data && (dyn_array = dyn_array_create(count, data_type_size, destruct_func))) {
         if (count && !dyn_shift(dyn_array, 0, count, CREATE_GAP, (void *const) data)) {
-            dynamic_array_destroy(dyn_array);
+            dyn_array_destroy(dyn_array);
             dyn_array = NULL;
         }
     }
@@ -105,13 +102,14 @@ dynamic_array_t *dynamic_array_import(const void *const data, const size_t count
 // If they're smart they'll just use front() if they want to play with it
 // Or just cast off the const and make the compiler allow it
 // or memcpy the pointer's value to a non-const pointer (my favorite trick)
-const void *dynamic_array_export(const dynamic_array_t *const dyn_array) {
-    return dynamic_array_front(dyn_array);
+// Oh C...
+const void *dyn_array_export(const dyn_array_t *const dyn_array) {
+    return dyn_array_front(dyn_array);
 }
 
-void dynamic_array_destroy(dynamic_array_t *dyn_array) {
+void dyn_array_destroy(dyn_array_t *dyn_array) {
     if (dyn_array) {
-        dynamic_array_clear(dyn_array);
+        dyn_array_clear(dyn_array);
         free(dyn_array->array);
         dyn_array->array = NULL;
         // Bad/dangerous assumption, don't make it
@@ -122,7 +120,7 @@ void dynamic_array_destroy(dynamic_array_t *dyn_array) {
 
 
 
-void *dynamic_array_front(const dynamic_array_t *const dyn_array) {
+void *dyn_array_front(const dyn_array_t *const dyn_array) {
     if (dyn_array && dyn_array->size) {
         // If array is null, well, this is ok, because it's null
         // but if array is broken, well, we can't help that
@@ -132,19 +130,19 @@ void *dynamic_array_front(const dynamic_array_t *const dyn_array) {
     return NULL;
 }
 
-bool dynamic_array_push_front(dynamic_array_t *const dyn_array, const void *const object) {
-    //dyn_shift(dynamic_array_t* dyn_array, size_t position, size_t count, DYN_SHIFT_MODE mode)
+bool dyn_array_push_front(dyn_array_t *const dyn_array, const void *const object) {
+    //dyn_shift(dyn_array_t* dyn_array, size_t position, size_t count, DYN_SHIFT_MODE mode)
     // make sure to check pointer FIRST, shift does stuff to the structure that we don't want to have to undo
     return object && dyn_shift(dyn_array, 0, 1, CREATE_GAP, (void *const)object);
 }
 
-bool dynamic_array_pop_front(dynamic_array_t *const dyn_array) {
+bool dyn_array_pop_front(dyn_array_t *const dyn_array) {
     // can this really ever fail? (other than NULL)
     // ... no. But we'll make it bool anyway. Allows for creative use.
     return dyn_shift(dyn_array, 0, 1, FILL_GAP_DESTRUCT, NULL);
 }
 
-bool dynamic_array_extract_front(dynamic_array_t *const dyn_array, void *const object) {
+bool dyn_array_extract_front(dyn_array_t *const dyn_array, void *const object) {
     // making them allocate room, makes us play nice with other things
     // as opposed to forcing them to do it our way like we know best
     // FILL_GAP can't have an error unless front doesn't exist,
@@ -156,18 +154,18 @@ bool dynamic_array_extract_front(dynamic_array_t *const dyn_array, void *const o
 
 
 
-void *dynamic_array_back(const dynamic_array_t *const dyn_array) {
+void *dyn_array_back(const dyn_array_t *const dyn_array) {
     if (dyn_array && dyn_array->size) {
         return DYN_ARRAY_POSITION(dyn_array, dyn_array->size - 1);
     }
     return NULL;
 }
 
-bool dynamic_array_push_back(dynamic_array_t *const dyn_array, const void *const object) {
+bool dyn_array_push_back(dyn_array_t *const dyn_array, const void *const object) {
     return object && dyn_array && dyn_shift(dyn_array, dyn_array->size, 1, CREATE_GAP, (void *const)object);
 }
 
-bool dynamic_array_pop_back(dynamic_array_t *const dyn_array) {
+bool dyn_array_pop_back(dyn_array_t *const dyn_array) {
     // MUST assert the size for the pop_back
     // if size is zero, it will rollover (rollunder?)
     // and then the size and count check will roll it back to zero during the check
@@ -181,7 +179,7 @@ bool dynamic_array_pop_back(dynamic_array_t *const dyn_array) {
            dyn_shift(dyn_array, dyn_array->size - 1, 1, FILL_GAP_DESTRUCT, NULL);
 }
 
-bool dynamic_array_extract_back(dynamic_array_t *const dyn_array, void *const object) {
+bool dyn_array_extract_back(dyn_array_t *const dyn_array, void *const object) {
     // FILL_GAP can't have an error unless front doesn't exist,
     // which we're suppressing (for now at least)
     return object && dyn_array && dyn_array->size &&
@@ -191,36 +189,39 @@ bool dynamic_array_extract_back(dynamic_array_t *const dyn_array, void *const ob
 
 
 
-void *dynamic_array_at(const dynamic_array_t *const dyn_array, const size_t index) {
+void *dyn_array_at(const dyn_array_t *const dyn_array, const size_t index) {
     if (dyn_array && index < dyn_array->size) {
         return DYN_ARRAY_POSITION(dyn_array, index);
     }
     return NULL;
 }
 
-bool dynamic_array_insert(dynamic_array_t *const dyn_array, const size_t index, const void *const object) {
+bool dyn_array_insert(dyn_array_t *const dyn_array, const size_t index, const void *const object) {
     // putting object at INDEX
     // so we shift a gap at INDEX
     return object && dyn_shift(dyn_array, index, 1, CREATE_GAP, (void *const)object);
 }
 
-bool dynamic_array_insert_sorted(dynamic_array_t *const dyn_array, const void *const object,
+bool dyn_array_insert_sorted(dyn_array_t *const dyn_array, const void *const object,
                                  int (*compare)(const void *, const void *)) {
-    if (dyn_array && dyn_array->size && compare && object){
+    if (dyn_array && compare && object) {
         size_t ordered_position = 0;
-        while (compare(object,DYN_ARRAY_POSITION(dyn_array,ordered_position)) < 0) {
-            ++ordered_position;
+        if (dyn_array->size) {
+            while (ordered_position < dyn_array->size &&
+                    compare(object, DYN_ARRAY_POSITION(dyn_array, ordered_position)) > 0) {
+                ++ordered_position;
+            }
         }
-        return dyn_shift(dyn_array, ordered_position, 1, CREATE_GAP, (void * const) object);
+        return dyn_shift(dyn_array, ordered_position, 1, CREATE_GAP, (void *const) object);
     }
     return false;
 }
 
-bool dynamic_array_erase(dynamic_array_t *const dyn_array, const size_t index) {
+bool dyn_array_erase(dyn_array_t *const dyn_array, const size_t index) {
     return dyn_shift(dyn_array, index, 1, FILL_GAP_DESTRUCT, NULL);
 }
 
-bool dynamic_array_extract(dynamic_array_t *const dyn_array, const size_t index, void *const object) {
+bool dyn_array_extract(dyn_array_t *const dyn_array, const size_t index, void *const object) {
     return dyn_array && object && dyn_array->size > index &&
            dyn_shift(dyn_array, index, 1, FILL_GAP, object);
 }
@@ -228,17 +229,17 @@ bool dynamic_array_extract(dynamic_array_t *const dyn_array, const size_t index,
 
 
 
-void dynamic_array_clear(dynamic_array_t *const dyn_array) {
+void dyn_array_clear(dyn_array_t *const dyn_array) {
     if (dyn_array && dyn_array->size) {
         dyn_shift(dyn_array, 0, dyn_array->size, FILL_GAP_DESTRUCT, NULL);
     }
 }
 
-bool dynamic_array_empty(const dynamic_array_t *const dyn_array) {
-    return dynamic_array_size(dyn_array) == 0;
+bool dyn_array_empty(const dyn_array_t *const dyn_array) {
+    return dyn_array_size(dyn_array) == 0;
 }
 
-size_t dynamic_array_size(const dynamic_array_t *const dyn_array) {
+size_t dyn_array_size(const dyn_array_t *const dyn_array) {
     if (dyn_array) {
         return dyn_array->size;
     }
@@ -248,10 +249,10 @@ size_t dynamic_array_size(const dynamic_array_t *const dyn_array) {
 
 
 
-bool dynamic_array_sort(dynamic_array_t *const dyn_array, int (*compare)(const void *, const void *)) {
+bool dyn_array_sort(dyn_array_t *const dyn_array, int (*compare)(const void *, const void *)) {
     // hah, turns out there's a quicksort in cstdlib.
     // and it works exactly like we want it to
-    if (dyn_array && dyn_array->size > 1 && compare) {
+    if (dyn_array && dyn_array->size && compare) {
         qsort(dyn_array->array, dyn_array->size, dyn_array->data_size, compare);
         return true;
     }
@@ -260,8 +261,19 @@ bool dynamic_array_sort(dynamic_array_t *const dyn_array, int (*compare)(const v
 
 
 
-/* Private Function Definitions */
-bool dyn_shift(dynamic_array_t *const dyn_array, const size_t position, const size_t count, const  DYN_SHIFT_MODE mode, void *const data_location) {
+//
+///
+// BELOW HERE BE DRAGONS
+///
+//
+
+
+
+
+// Checks to see if the object can handle an increase in size (and optionally increases capacity)
+bool dyn_request_size_increase(dyn_array_t *const dyn_array, const size_t increment);
+
+bool dyn_shift(dyn_array_t *const dyn_array, const size_t position, const size_t count, const  DYN_SHIFT_MODE mode, void *const data_location) {
     // Shifts contents. Mode flag controls what happens and how (duh?)
     // So, if you erase idx 2, you're filling the gap at position two
     // [A][X][B][C][D][E]
@@ -353,7 +365,7 @@ bool dyn_shift(dynamic_array_t *const dyn_array, const size_t position, const si
     return false;
 }
 
-bool dyn_request_size_increase(dynamic_array_t *const dyn_array, const size_t increment) {
+bool dyn_request_size_increase(dyn_array_t *const dyn_array, const size_t increment) {
     // check to see if the size can be increased by the increment
     // and increase capacity if need be
     // average case will be perfectly fine, single increment
