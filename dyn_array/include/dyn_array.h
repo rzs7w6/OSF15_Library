@@ -216,6 +216,20 @@ bool dyn_array_empty(const dyn_array_t *const dyn_array);
 size_t dyn_array_size(const dyn_array_t *const dyn_array);
 
 ///
+/// Returns the current capacity of the array
+/// \param dyn_array the dynamic array
+/// \return the capacity of the array, 0 on error
+///
+size_t dyn_array_capacity(const dyn_array_t *const dyn_array);
+
+///
+/// Returns the size of the object stored in the array
+/// \param dyn_array the dynamic array
+/// \return the size of a stored object (bytes), 0 on error
+///
+size_t dyn_array_data_size(const dyn_array_t *const dyn_array);
+
+///
 /// Sorts the array according to the given comparator function
 /// compare(x,y) < 0 iff x < y
 /// compare(x,y) = 0 iff x == y

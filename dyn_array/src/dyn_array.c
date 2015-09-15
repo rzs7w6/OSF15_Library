@@ -244,7 +244,20 @@ size_t dyn_array_size(const dyn_array_t *const dyn_array) {
         return dyn_array->size;
     }
     return 0; // hmmmmm...
+}
 
+size_t dyn_array_capacity(const dyn_array_t *const dyn_array) {
+    if (dyn_array) {
+        return dyn_array->capacity;
+    }
+    return 0; // hmmmmm...
+}
+
+size_t dyn_array_data_size(const dyn_array_t *const dyn_array) {
+    if (dyn_array) {
+        return dyn_array->data_size;
+    }
+    return 0; // hmmmmm...
 }
 
 

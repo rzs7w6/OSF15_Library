@@ -150,6 +150,14 @@
         2. NORMAL, empty
         3. FAIL, null ptr
 
+    size_t dyn_array_capacity(const dyn_array_t *const dyn_array);
+        1. NORMAL
+        2. FAIL, null ptr
+
+    size_t dyn_array_data_size(const dyn_array_t *const dyn_array);
+        1. NORMAL
+        2. FAIL, null ptr
+
     const void *dyn_array_export(const dyn_array_t *const dyn_array);
         SEE FRONT
 
@@ -232,7 +240,7 @@ void run_basic_tests_e();
 void run_tests() {
     init_data_blocks();
 
-    // CONSTRUCTOR, DESTRUCTOR, AT, FRONT, PUSH_FRONT, BACK, SIZE, CLEAR, EMPTY
+    // CONSTRUCTOR, DESTRUCTOR, AT, FRONT, PUSH_FRONT, BACK, SIZE, CLEAR, EMPTY, CAPACITY, DATA_SIZE
     run_basic_tests_a();
 
     // PUSH_BACK, POP_FRONT, POP_BACK, EXTRACT_FRONT, EXTRACT_BACK
@@ -262,6 +270,22 @@ void run_basic_tests_a() {
     assert(dyn_a->data_size == 4);
     assert(dyn_a->destructor == NULL);
     assert(dyn_a->array);
+
+    // CAPACITY 1
+    assert(dyn_array_capacity(dyn_a) == 16);
+    
+    // CAPACITY 2
+    assert(dyn_array_capacity(NULL) == 0);
+
+    // CAPACITY tested and clear for use
+
+    // DATA_SIZE 1
+    assert(dyn_array_data_size(dyn_a) == 4);
+
+    // DATA_SIZE 2
+    assert(dyn_array_data_size(NULL) == 0);
+
+    // DATA_SIZE tested and clear fo use
 
     // 1 & 4 DESTRUCTOR
     dyn_array_destroy(dyn_a);
