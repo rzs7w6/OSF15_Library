@@ -15,6 +15,7 @@ Current libraries:
 	- Supports destructors! Function pointers are fun.
 	- Wishlist:
 		- Better insert_sorted (bsearch-based)
+		- dyn_array_for_each, takes a func pointer and applies the func to all objects
 		- shrink_to_fit (add a flag to the struct, have it be read by dyn_request_size_increase)
 		- Rename export to data (that's what C++ calls it)???
 		- Inserting/removing n objects at a time
