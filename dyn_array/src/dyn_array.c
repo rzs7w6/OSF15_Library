@@ -1,6 +1,7 @@
 #include "../include/dyn_array.h"
 
 struct dyn_array {
+    // unsigned flags;
     size_t capacity;
     size_t size;
     size_t data_size;
@@ -15,45 +16,23 @@ struct dyn_array {
     #define DYN_MAX_CAPACITY (((size_t)1) << ((sizeof(size_t) << 3) - 8))
 #endif
 
-// Safety functions from when I was concerned size_t may overflow
-// Taking them out because trying to cover all the edge cases was killing me
-// and it would just slow down everything
-// So, casual warning, this library will break if you're overflowing size_t...
-// but size_t is the max addressable, so... you can't(?)
-// No guarentee it'll work if you're using this to store, let's say 10EB+ of data
-// We should probably transition to GMP if we need these kinds of numbers
-/*
-    #define SIZE_T_BYTE_COUNT (sizeof(size_t) << 3)
-    size_t size_t_ffs(size_t A) {
-    // can't be sure which ffs function will be appropriate
-    // we we have to roll our own :/
-    // (probably ffsll, but that's non-portable)
-    // (and assembly won't be portable either)
-
-    // 0 will return 1, so there's slight room for error
-    size_t msb = 0;
-    do {++msb;} while (A >>= 1);
-    return msb;
-    }
-
-    #define MULTIPLY_MAY_OVERFLOW(A, B) ((size_t_ffs(A) + size_t_ffs(B)) > SIZE_T_BYTE_COUNT)
-    // for multiplication any two operands will result in, at most,
-    // the sum of the highest bits
-
-    #define ADDITION_MAY_OVERFLOW(A, B) ((A) > (SIZE_MAX - (B)))
-*/
-
 // casts pointer and does arithmatic to get index of element
 #define DYN_ARRAY_POSITION(dyn_array_ptr, idx) (((uint8_t*)dyn_array_ptr->array) + ((idx) * dyn_array_ptr->data_size))
 // Gets the size (in bytes) of n dyn_array elements
 #define DYN_SIZE_N_ELEMS(dyn_array_ptr, n) (dyn_array_ptr->data_size * (n))
+
+// Flag values
+// SHRUNK to indicate shrink_to_fit was called and size needs to be rehandled
+// SORTED to track if the objects have been sorted by us (sorted is set by sort and unset by insert/push)
+// these are just ideas
+//typedef enum {NONE = 0x00, SHRUNK = 0x01, SORTED = 0x02} DYN_FLAGS;
 
 
 // Modes of operation for dyn_shift
 typedef enum {CREATE_GAP = 0x01, FILL_GAP = 0x02, FILL_GAP_DESTRUCT = 0x06} DYN_SHIFT_MODE;
 
 // The core of any insert/remove operation, check the impl for details
-bool dyn_shift(dyn_array_t *const dyn_array, const size_t position, const size_t count, const  DYN_SHIFT_MODE mode, void *const data_location);
+bool dyn_shift(dyn_array_t *const dyn_array, const size_t position, const size_t count, const DYN_SHIFT_MODE mode, void *const data_location);
 
 
 dyn_array_t *dyn_array_create(const size_t capacity, const size_t data_type_size, void (*destruct_func)(void *)) {
@@ -203,7 +182,7 @@ bool dyn_array_insert(dyn_array_t *const dyn_array, const size_t index, const vo
 }
 
 bool dyn_array_insert_sorted(dyn_array_t *const dyn_array, const void *const object,
-                                 int (*compare)(const void *, const void *)) {
+                             int (*compare)(const void *, const void *)) {
     if (dyn_array && compare && object) {
         size_t ordered_position = 0;
         if (dyn_array->size) {
@@ -272,6 +251,20 @@ bool dyn_array_sort(dyn_array_t *const dyn_array, int (*compare)(const void *, c
     return false;
 }
 
+
+
+/*
+// No return value. It either goes or it doesn't. shrink_to_fit is more of a request
+void dyn_array_shrink_to_fit(dyn_array_t *const dyn_array) {
+    if (dyn_array) {
+        void *new_address = realloc(dyn_array->data, DYN_ARRAY_SIZE_N_ELEMS(dyn_array, dyn_array->size));
+        if (new_address) {
+            dyn_array->data = new_address;
+            SET_FLAG(dyn_array,SHRUNK);
+        }
+    }
+}
+*/
 
 
 //
@@ -391,6 +384,9 @@ bool dyn_request_size_increase(dyn_array_t *const dyn_array, const size_t increm
         }
         // have to reallocate, is that even possible?
         size_t needed_size = dyn_array->size + increment;
+
+        // INSERT SHRINK_TO_FIT CORRECTION HERE
+
         if (needed_size <= DYN_MAX_CAPACITY) {
             size_t new_capacity = dyn_array->capacity << 1;
             while (new_capacity < needed_size) {new_capacity <<= 1;}

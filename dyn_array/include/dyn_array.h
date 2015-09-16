@@ -33,7 +33,7 @@ typedef struct dyn_array dyn_array_t;
 ///
 /// Creates a new dynamic array capable of holding at least capacity number of
 /// data_type_size-sized objects with optional destructor
-/// \param capacity Minimum capacity request
+/// \param capacity Minimum capacity request (0 is fine if you have no opinion)
 /// \param data_type_size Size of the object type to be stored in bytes
 /// \param destruct_func Optional destructor to be applied on destruct operations (NULL to disable)
 /// \return new dynamic array pointer, NULL on error
@@ -163,19 +163,6 @@ bool dyn_array_insert(dyn_array_t *const dyn_array, const size_t index,
                           const void *const object);
 
 ///
-/// Inserts the given object into the correct sorted position
-///  increasing the container size by one
-/// and moving any contents beyond the sorted position down one
-/// Note: calling this on an unsorted array will insert it... somewhere
-/// \param dyn_array the dynamic array
-/// \param object the object to insert
-/// \param compare the comparison function
-/// \return bool representing success of the operation
-///
-bool dyn_array_insert_sorted(dyn_array_t *const dyn_array, const void *const object,
-                                 int (*compare)(const void *, const void *));
-
-///
 /// Removes and optionally destructs the object at the given index
 /// \param dyn_array the dynamic array
 /// \param index index of the object to be erased
@@ -240,5 +227,19 @@ size_t dyn_array_data_size(const dyn_array_t *const dyn_array);
 /// \return bool representing success of the operation
 ///
 bool dyn_array_sort(dyn_array_t *const dyn_array, int (*compare)(const void *, const void *));
+
+
+///
+/// Inserts the given object into the correct sorted position
+///  increasing the container size by one
+/// and moving any contents beyond the sorted position down one
+/// Note: calling this on an unsorted array will insert it... somewhere
+/// \param dyn_array the dynamic array
+/// \param object the object to insert
+/// \param compare the comparison function
+/// \return bool representing success of the operation
+///
+bool dyn_array_insert_sorted(dyn_array_t *const dyn_array, const void *const object,
+                                 int (*compare)(const void *, const void *));
 
 #endif

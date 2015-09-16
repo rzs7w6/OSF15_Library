@@ -1,11 +1,19 @@
 #include "../include/bitmap.h"
 
 struct bitmap {
-    uint8_t leftover_bits;
-
+    unsigned leftover_bits; // Packing will increase this to an int anyway
+    unsigned flags; // Generic place to store flags. Not enough flags to worry about width yet.
     uint8_t *data;
     size_t bit_count, byte_count;
 };
+
+// Just the one for now. Indicates we're an overlay and should not free
+typedef enum {NONE = 0x00, OVERLAY = 0x01} BITMAP_FLAGS;
+
+#define FLAG_CHECK(bitmap, flag) (bitmap->flags & flag)
+// Not sure I want these
+// #define FLAG_SET(bitmap, flag) bitmap->flags |= flag
+// #define FLAG_UNSET(bitmap, flag) bitmap->flags &= ~flag
 
 // lookup instead of always shifting bits. Should be faster? Confirmed: 10% faster
 // Also, using native int width because it should be faster as well. - Negligible/indeterminate
@@ -13,12 +21,14 @@ const static uint8_t mask[] = { 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80 }
 
 const static uint8_t invert_mask[] = { 0xFE, 0xFD, 0xFB, 0xF7, 0xEF, 0xDF, 0xBF, 0x7F};
 // I won't lie, I only knew 0xFE without getting a calculator
+
 // Way more testing than I should waste my time on suggested uint8_t was faster
 // but it may still be negligible/indeterminate.
-// Power's out and I'm on battery, so my machine may be sabotaging timings out of self-preservaton
-// It shouldn't matter since one of them being non-int-width is the limiting factor
-// At least making it uint8_t should lower the footprint?
-// (Nope? No diff in binary size, potentially due to gaps?)
+// Since the data store is uint8_t, we already get punished for our bad alignment
+// so this doesn't really matter until everything gets moved to generic int
+
+// A place to generalize the creation process and setup
+bitmap_t *bitmap_initialize(size_t n_bits, BITMAP_FLAGS flags);
 
 void bitmap_set(bitmap_t *const bitmap, const size_t bit) {
     bitmap->data[bit >> 3] |= mask[bit & 0x07];
@@ -53,44 +63,37 @@ void bitmap_format(bitmap_t *const bitmap, const uint8_t pattern) {
 }
 
 bitmap_t *bitmap_create(const size_t n_bits) {
-    if (n_bits) { // must be non-zero
-        bitmap_t *bitmap = (bitmap_t *) malloc(sizeof(bitmap_t));
-        if (bitmap) {
-            bitmap->bit_count = n_bits;
-            bitmap->byte_count = n_bits >> 3;
-            bitmap->leftover_bits = n_bits & 0x07;
-            bitmap->byte_count += (bitmap->leftover_bits ? 1 : 0);
-            bitmap->data = (uint8_t *)calloc(bitmap->byte_count, 1);
+    return bitmap_initialize(n_bits, NONE);
+}
 
-            if (bitmap->data) {
-                return bitmap;
-            }
-            free(bitmap);
+bitmap_t *bitmap_import(const size_t n_bits, const void *const bitmap_data) {
+    if (bitmap_data) {
+        bitmap_t *bitmap = bitmap_initialize(n_bits, NONE);
+        if (bitmap) {
+            memcpy(bitmap->data, bitmap_data, bitmap->byte_count);
+            return bitmap;
         }
     }
     return NULL;
 }
 
-bitmap_t *bitmap_import(const size_t n_bits, const uint8_t *const bitmap_data) {
-    bitmap_t *bitmap = bitmap_create(n_bits);
-    if (bitmap && bitmap_data) {
-        memcpy(bitmap->data, bitmap_data, bitmap->byte_count);
-        return bitmap;
+bitmap_t *bitmap_overlay(const size_t n_bits, void *const bitmap_data) {
+    if (bitmap_data) {
+        bitmap_t *bitmap = bitmap_initialize(n_bits, OVERLAY);
+        if (bitmap) {
+            bitmap->data = (uint8_t *) bitmap_data;
+            return bitmap;
+        }
     }
-    free(bitmap);
     return NULL;
 }
 
-/*
-bitmap_t *bitmap_overlay(const size_t n_bits, uint8_t * const bitmap_data) {
-    // use an existing data block
-    // add field to struct that indicated that the pointer SHOULD NOT be freed
-}
-*/
-
 void bitmap_destroy(bitmap_t *bitmap) {
     if (bitmap) {
-        free(bitmap->data);
+        if (!FLAG_CHECK(bitmap, OVERLAY)) {
+            // don't free memory that isn't ours!
+            free(bitmap->data);
+        }
         free(bitmap);
     }
 }
@@ -119,3 +122,42 @@ size_t bitmap_ffz(const bitmap_t *const bitmap) {
 }
 
 // fls flz?
+
+//
+///
+// HERE BE DRAGONS
+///
+//
+
+
+bitmap_t *bitmap_initialize(size_t n_bits, BITMAP_FLAGS flags) {
+    if (n_bits) { // must be non-zero
+        bitmap_t *bitmap = (bitmap_t *) malloc(sizeof(bitmap_t));
+        if (bitmap) {
+            bitmap->flags = flags;
+            bitmap->bit_count = n_bits;
+            bitmap->byte_count = n_bits >> 3;
+            bitmap->leftover_bits = n_bits & 0x07;
+            bitmap->byte_count += (bitmap->leftover_bits ? 1 : 0);
+
+            // FLAG HANDLING HERE
+
+            // This logic will need to be reworked when we have more than one flag, haha
+            // Maybe something like if (flags) and then contain a giant if/else-if for each flag
+            // Then a return at the end
+
+            if (FLAG_CHECK(bitmap, OVERLAY)) {
+                bitmap->data = NULL;
+                return bitmap;
+            } else {
+                bitmap->data = (uint8_t *)calloc(bitmap->byte_count, 1);
+                if (bitmap->data) {
+                    return bitmap;
+                }
+            }
+
+            free(bitmap);
+        }
+    }
+    return NULL;
+}

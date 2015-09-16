@@ -97,11 +97,19 @@ void bitmap_test_a();
 
 void bitmap_test_b();
 
+void bitmap_test_c();
+
 int main() {
 
+    // EVERYTHING ELSE
     bitmap_test_a();
 
+    // FFS/FFZ
     bitmap_test_b();
+
+    // OVERLAY
+    bitmap_test_c();
+
     // Done. GO TEAM!
 
     puts("TESTS PASSED");
@@ -522,4 +530,24 @@ void bitmap_test_b() {
     bitmap_reset(bitmap_A, 57);
 
     assert(bitmap_ffz(bitmap_A) == 57);
+}
+
+void bitmap_test_c() {
+    bitmap_t *bitmap_a;
+    uint8_t arr[10];
+    memset(arr,0xFF,10);
+
+    // light tests since overlay is just a wrapper for import
+
+    assert(bitmap_overlay(0,arr) == NULL);
+
+    assert(bitmap_overlay(80,NULL) == NULL);
+
+    bitmap_a = bitmap_overlay(80, arr);
+
+    bitmap_reset(bitmap_a,3);
+    assert(arr[0] != 0xFF);
+
+    bitmap_destroy(bitmap_a); // should segfault if we free it by accident
+
 }

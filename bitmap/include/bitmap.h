@@ -20,7 +20,7 @@ typedef struct bitmap bitmap_t;
 /// \param bitmap The bitmap
 /// \param bit The bit to set
 ///
-void bitmap_set(bitmap_t *const bitmap,const size_t bit);
+void bitmap_set(bitmap_t *const bitmap, const size_t bit);
 
 ///
 /// Clears requested bit in bitmap
@@ -93,12 +93,23 @@ const uint8_t *bitmap_export(const bitmap_t *const bitmap);
 /// Creates a new bitmap with the provided data
 /// Note: This does not use the buffer but copies the data
 ///  to an internal buffer
-/// (V2: create a func that allows using a pre-existing buffer)
 /// \param n_bits The number of bits in the bitmap
 /// \param bitmap_data The data to import
 /// \return New bitmap pointer, NULL on error
 ///
-bitmap_t *bitmap_import(const size_t n_bits, const  uint8_t *const bitmap_data);
+bitmap_t *bitmap_import(const size_t n_bits, const void *const bitmap_data);
+
+
+///
+/// Creates a new bitmap using the provided data
+/// Note: This uses the given block of memory
+///  and does not free this pointer on destruction
+/// \param n_bits The number of bits in the bitmap
+/// \param bitmap_data The data to import
+/// \return New bitmap pointer, NULL on error
+///
+bitmap_t *bitmap_overlay(const size_t n_bits, void *const bitmap_data);
+
 
 ///
 /// Creates a bitmap to contain n bits (zero initialized)
