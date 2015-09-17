@@ -240,6 +240,14 @@ bool dyn_array_sort(dyn_array_t *const dyn_array, int (*compare)(const void *, c
 /// \return bool representing success of the operation
 ///
 bool dyn_array_insert_sorted(dyn_array_t *const dyn_array, const void *const object,
-                                 int (*compare)(const void *, const void *));
+                                 int (*compare)(const void *const, const void *const));
+
+///
+/// Applies the given function to every object in the array
+/// \param dyn_array the dynamic array
+/// \param func the function to apply
+/// \return bool representing success of the operation
+///
+bool dyn_array_for_each(dyn_array_t *const dyn_array, void (*func)(void *const));
 
 #endif

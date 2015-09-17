@@ -252,10 +252,25 @@ bool dyn_array_sort(dyn_array_t *const dyn_array, int (*compare)(const void *, c
 }
 
 
+bool dyn_array_for_each(dyn_array_t *const dyn_array, void (*func)(void *const)) {
+    if (dyn_array && dyn_array->array && func) {
+        // So I just noticed we never check the data array ever
+        // Which is both unsafe and potentially undefined behavior
+        // Although we're the only ones that touch the pointer and we always validate it.
+        // So it's questionable. We'll check it here.
+        uint8_t *data_walker = (uint8_t *)dyn_array->array;
+        for (size_t idx = 0; idx < dyn_array->size; ++idx, data_walker += dyn_array->data_size) {
+            func((void *const) data_walker);
+        }
+        return true;
+    }
+    return false;
+}
+
 
 /*
-// No return value. It either goes or it doesn't. shrink_to_fit is more of a request
-void dyn_array_shrink_to_fit(dyn_array_t *const dyn_array) {
+    // No return value. It either goes or it doesn't. shrink_to_fit is more of a request
+    void dyn_array_shrink_to_fit(dyn_array_t *const dyn_array) {
     if (dyn_array) {
         void *new_address = realloc(dyn_array->data, DYN_ARRAY_SIZE_N_ELEMS(dyn_array, dyn_array->size));
         if (new_address) {
@@ -263,7 +278,7 @@ void dyn_array_shrink_to_fit(dyn_array_t *const dyn_array) {
             SET_FLAG(dyn_array,SHRUNK);
         }
     }
-}
+    }
 */
 
 

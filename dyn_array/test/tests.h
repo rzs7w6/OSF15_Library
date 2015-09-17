@@ -179,6 +179,12 @@
         3. FAIL, no array
         4. FAIL, empty array
         5. FAIL, null comparator
+
+    bool dyn_array_for_each(dyn_array_t *const dyn_array, void (*func)(void *const));
+        1. NORMAL, contents
+        2. NORMAL, empty
+        3. FAIL, null array
+        4. FAIL, null func
 */
 
 // Shamelessly stolen from
@@ -205,11 +211,16 @@ void block_destructor_mini(void *block) {
     ++destruct_counter;
 }
 
-int block_compare(const void *a, const void *b) {
+int for_each_counter = 0;
+void block_for_each(void *block) {
+    ++for_each_counter;
+}
+
+int block_compare(const void *const a, const void *const b) {
     return ((int)(((const uint8_t *)a)[0])) - (((const uint8_t *)b)[0]);
 }
 
-int block_compare_inv(const void *a, const void *b) {
+int block_compare_inv(const void *const a, const void *const b) {
     return ((int)(((const uint8_t *)b)[0])) - (((const uint8_t *)a)[0]);
 }
 
@@ -273,7 +284,7 @@ void run_basic_tests_a() {
 
     // CAPACITY 1
     assert(dyn_array_capacity(dyn_a) == 16);
-    
+
     // CAPACITY 2
     assert(dyn_array_capacity(NULL) == 0);
 
@@ -1087,6 +1098,31 @@ void run_basic_tests_e() {
     assert(dyn_array_sort(dyn_a, NULL) == false);
 
     // SORT DONE
+
+    dyn_array_clear(dyn_a);
+
+    // FOR_EACH 2
+    assert(dyn_array_for_each(dyn_a, &block_for_each));
+
+    // FOR_EACH 3
+    assert(dyn_array_for_each(NULL, &block_for_each) == false);
+
+    // FOR_EACH 4
+    assert(dyn_array_for_each(dyn_a, NULL) == false);
+
+    assert(dyn_array_insert_sorted(dyn_a, DATA_BLOCKS[0], &block_compare));
+
+    // FOR EACH 1
+    assert(dyn_array_for_each(dyn_a,&block_for_each));
+    assert(for_each_counter == 1);
+
+    assert(dyn_array_insert_sorted(dyn_a, DATA_BLOCKS[1], &block_compare));
+    for_each_counter = 0;
+
+    assert(dyn_array_for_each(dyn_a,&block_for_each));
+    assert(for_each_counter == 2);
+
+    // FOR EACH tested and cleared for use
 
     dyn_array_destroy(dyn_a);
 }
