@@ -23,7 +23,7 @@ Current libraries:
 
 Coming soon:
 - block_store (v2.0)
-	- Generic in-memory block storage system
+	- Generic in-memory block storage system (with optional file syncing)
 	- Wishlist:
 		- Better utility implementation that uses blocks instead of trying the full request at once
 
