@@ -181,21 +181,6 @@ bool dyn_array_insert(dyn_array_t *const dyn_array, const size_t index, const vo
     return object && dyn_shift(dyn_array, index, 1, CREATE_GAP, (void *const)object);
 }
 
-bool dyn_array_insert_sorted(dyn_array_t *const dyn_array, const void *const object,
-                             int (*compare)(const void *, const void *)) {
-    if (dyn_array && compare && object) {
-        size_t ordered_position = 0;
-        if (dyn_array->size) {
-            while (ordered_position < dyn_array->size &&
-                    compare(object, DYN_ARRAY_POSITION(dyn_array, ordered_position)) > 0) {
-                ++ordered_position;
-            }
-        }
-        return dyn_shift(dyn_array, ordered_position, 1, CREATE_GAP, (void *const) object);
-    }
-    return false;
-}
-
 bool dyn_array_erase(dyn_array_t *const dyn_array, const size_t index) {
     return dyn_shift(dyn_array, index, 1, FILL_GAP_DESTRUCT, NULL);
 }
@@ -247,6 +232,22 @@ bool dyn_array_sort(dyn_array_t *const dyn_array, int (*compare)(const void *, c
     if (dyn_array && dyn_array->size && compare) {
         qsort(dyn_array->array, dyn_array->size, dyn_array->data_size, compare);
         return true;
+    }
+    return false;
+}
+
+
+bool dyn_array_insert_sorted(dyn_array_t *const dyn_array, const void *const object,
+                             int (*compare)(const void *, const void *)) {
+    if (dyn_array && compare && object) {
+        size_t ordered_position = 0;
+        if (dyn_array->size) {
+            while (ordered_position < dyn_array->size &&
+                    compare(object, DYN_ARRAY_POSITION(dyn_array, ordered_position)) > 0) {
+                ++ordered_position;
+            }
+        }
+        return dyn_shift(dyn_array, ordered_position, 1, CREATE_GAP, (void *const) object);
     }
     return false;
 }
