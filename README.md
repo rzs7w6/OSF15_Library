@@ -5,7 +5,7 @@ Current libraries:
 	- Wishlist:
 		- FLZ/FLS
 		- Better FFZ/FFS/for_each
-		- Resumeable FFS/FSZ/FLZ/FLS ?
+		- Resumeable FFS/FFZ/FLZ/FLS ?
 		- Parameter checking
 			- Just never give us a bad pointer or bit address and it's fine :p
 		- Rename export to data (that's what C++ calls it)???
@@ -34,6 +34,6 @@ Eventually (maybe):
 	- Doubly-linked
 
 - dyn_hash
-	- It's a hash table, it stores AND hashes things!
+	- It's a hash table, it stores AND hashes things! Exciting!
 
 -- Will, the best TA
