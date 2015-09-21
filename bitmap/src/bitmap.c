@@ -52,6 +52,38 @@ void bitmap_invert(bitmap_t *const bitmap) {
     }
 }
 
+size_t bitmap_ffs(const bitmap_t *const bitmap) {
+    if (bitmap) {
+        size_t result = 0;
+        for (; result < bitmap->bit_count && !bitmap_test(bitmap, result); ++result) {}
+        return (result == bitmap->bit_count ? SIZE_MAX : result);
+    }
+    return SIZE_MAX;
+}
+
+size_t bitmap_ffz(const bitmap_t *const bitmap) {
+    if (bitmap) {
+        size_t result = 0;
+        for (; result < bitmap->bit_count && bitmap_test(bitmap, result); ++result) {}
+        return (result == bitmap->bit_count ? SIZE_MAX : result);
+    }
+    return SIZE_MAX;
+}
+
+void bitmap_for_each(const bitmap_t *const bitmap, void (*func)(size_t, void *), void *args) {
+    if (bitmap && func) {
+        for (size_t idx = 0; idx < bitmap->bit_count; ++idx) {
+            if (bitmap_test(bitmap, idx)) {
+                func(idx, args);
+            }
+        }
+    }
+}
+
+void bitmap_format(bitmap_t *const bitmap, const uint8_t pattern) {
+    memset(bitmap->data, pattern, bitmap->byte_count);
+}
+
 size_t bitmap_get_bits(const bitmap_t *const bitmap) {
     return bitmap->bit_count;
 }
@@ -60,16 +92,12 @@ size_t bitmap_get_bytes(const bitmap_t *const bitmap) {
     return bitmap->byte_count;
 }
 
-const uint8_t *bitmap_export(const bitmap_t *const bitmap) {
-    return bitmap->data;
-}
-
-void bitmap_format(bitmap_t *const bitmap, const uint8_t pattern) {
-    memset(bitmap->data, pattern, bitmap->byte_count);
-}
-
 bitmap_t *bitmap_create(const size_t n_bits) {
     return bitmap_initialize(n_bits, NONE);
+}
+
+const uint8_t *bitmap_export(const bitmap_t *const bitmap) {
+    return bitmap->data;
 }
 
 bitmap_t *bitmap_import(const size_t n_bits, const void *const bitmap_data) {
@@ -103,31 +131,6 @@ void bitmap_destroy(bitmap_t *bitmap) {
         free(bitmap);
     }
 }
-
-
-size_t bitmap_ffs(const bitmap_t *const bitmap) {
-    if (bitmap) {
-        // I've spent over an hour trying to write it in a smart way.
-        // I give up.
-        size_t result = 0;
-        for (; result < bitmap->bit_count && !bitmap_test(bitmap, result); ++result) {}
-        return (result == bitmap->bit_count ? SIZE_MAX : result);
-    }
-    return SIZE_MAX;
-}
-
-size_t bitmap_ffz(const bitmap_t *const bitmap) {
-    if (bitmap) {
-        // I've spent over an hour trying to write it in a smart way.
-        // I give up.
-        size_t result = 0;
-        for (; result < bitmap->bit_count && bitmap_test(bitmap, result); ++result) {}
-        return (result == bitmap->bit_count ? SIZE_MAX : result);
-    }
-    return SIZE_MAX;
-}
-
-// fls flz?
 
 //
 ///

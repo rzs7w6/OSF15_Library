@@ -75,11 +75,17 @@
     void bitmap_destroy(bitmap_t* bitmap);
 
     It's void, so it's a little hard to test...
-    23. Uhh... test notmal operation?
+    23. Uhh... test normal operation?
     24. ...Test NULL?
 
     void bitmap_invert(bitmap_t *const bitmap);
     25. Normal use
+
+    void bitmap_for_each(const bitmap_t *const bitmap, void (*func)(size_t, void *), void *args);
+    26. Normal use, has bits set
+    27. Normal use, no bits set
+    28. Fail, NULL bitmap
+    29. fail, NULL func
 */
 
 bool memcmp_fixed(const uint8_t *const data, uint8_t fixed_value, size_t nbytes) {
@@ -94,6 +100,12 @@ bool memcmp_fixed(const uint8_t *const data, uint8_t fixed_value, size_t nbytes)
         }
     }
     return false;
+}
+
+int for_each_counter = 0;
+
+void for_each_test(size_t bit_num, void *value) {
+    for_each_counter += bit_num + (*((size_t *)value));
 }
 
 void bitmap_test_a();
@@ -513,7 +525,7 @@ void bitmap_test_b() {
     assert(bitmap_ffs(bitmap_A) == SIZE_MAX);
     assert(bitmap_ffz(bitmap_A) == 0);
 
-    bitmap_set(bitmap_A,57);
+    bitmap_set(bitmap_A, 57);
 
     assert(bitmap_ffs(bitmap_A) == 57);
     assert(bitmap_ffz(bitmap_A) == 0);
@@ -538,26 +550,57 @@ void bitmap_test_b() {
 void bitmap_test_c() {
     bitmap_t *bitmap_a;
     uint8_t arr[10];
-    memset(arr,0xFF,10);
+    memset(arr, 0xFF, 10);
 
     // light tests since overlay is just a wrapper for import
 
-    assert(bitmap_overlay(0,arr) == NULL);
+    assert(bitmap_overlay(0, arr) == NULL);
 
-    assert(bitmap_overlay(80,NULL) == NULL);
+    assert(bitmap_overlay(80, NULL) == NULL);
 
     bitmap_a = bitmap_overlay(80, arr);
 
-    bitmap_reset(bitmap_a,3);
+    bitmap_reset(bitmap_a, 3);
     assert(arr[0] != 0xFF);
 
-    memset(arr,0xFF,10);
+
+    // 25
+    memset(arr, 0xFF, 10);
 
     bitmap_invert(bitmap_a);
 
-    for (int i = 0; i < 10; ++i){
-        assert(arr[0] == 0x00);
+    for (int i = 0; i < 10; ++i) {
+        assert(arr[i] == 0x00);
     }
+
+    // void bitmap_for_each(const bitmap_t *const bitmap, void (*func)(size_t, void *), void *args);
+    //26. Normal use, has bits set
+    //27. Normal use, no bits set
+    //28. Fail, NULL bitmap
+    //29. fail, NULL func
+
+    size_t val = 1;
+
+    // 27
+    bitmap_for_each(bitmap_a, &for_each_test, &val);
+    assert(for_each_counter == 0);
+
+    // 26
+    bitmap_set(bitmap_a, 3);
+    bitmap_set(bitmap_a, 30);
+    bitmap_for_each(bitmap_a, &for_each_test, &val);
+
+    // should be 31 + 4
+    assert(for_each_counter == 35);
+
+    // 28
+    bitmap_for_each(NULL, &for_each_test, &val);
+    assert(for_each_counter == 35);
+
+    // 29
+    bitmap_for_each(NULL, NULL, &val);
+    assert(for_each_counter == 35);
+
 
     bitmap_destroy(bitmap_a); // should segfault if we free it by accident
 

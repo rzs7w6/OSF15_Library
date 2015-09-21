@@ -1,11 +1,11 @@
 # OS F15 Libraries
 Current libraries:
-- bitmap (v1.3)
+- bitmap (v1.4)
 	- It's a bitmap, it stores bits!
 	- Wishlist:
 		- FLZ/FLS
-		- for_each via function pointer (with VLAs)
-		- Better FFZ/FFS
+		- Better FFZ/FFS/for_each
+		- Resumeable FFS/FSZ/FLZ/FLS ?
 		- Parameter checking
 			- Just never give us a bad pointer or bit address and it's fine :p
 		- Rename export to data (that's what C++ calls it)???
