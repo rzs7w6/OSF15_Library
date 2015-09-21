@@ -27,6 +27,7 @@ Coming soon:
 	- Generic in-memory block storage system (with optional file syncing)
 	- Wishlist:
 		- Better utility implementation that uses blocks instead of trying the full request at once
+		- Make in-memory optional (add flag, detect and switch operation modes in funcs that depend on it)
 
 Eventually (maybe):
 - dyn_list
