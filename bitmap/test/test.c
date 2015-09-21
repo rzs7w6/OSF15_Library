@@ -77,6 +77,9 @@
     It's void, so it's a little hard to test...
     23. Uhh... test notmal operation?
     24. ...Test NULL?
+
+    void bitmap_invert(bitmap_t *const bitmap);
+    25. Normal use
 */
 
 bool memcmp_fixed(const uint8_t *const data, uint8_t fixed_value, size_t nbytes) {
@@ -107,7 +110,7 @@ int main() {
     // FFS/FFZ
     bitmap_test_b();
 
-    // OVERLAY
+    // OVERLAY INVERT
     bitmap_test_c();
 
     // Done. GO TEAM!
@@ -547,6 +550,14 @@ void bitmap_test_c() {
 
     bitmap_reset(bitmap_a,3);
     assert(arr[0] != 0xFF);
+
+    memset(arr,0xFF,10);
+
+    bitmap_invert(bitmap_a);
+
+    for (int i = 0; i < 10; ++i){
+        assert(arr[0] == 0x00);
+    }
 
     bitmap_destroy(bitmap_a); // should segfault if we free it by accident
 

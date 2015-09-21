@@ -45,6 +45,12 @@ bool bitmap_test(const bitmap_t *const bitmap, const size_t bit);
 void bitmap_flip(bitmap_t *const bitmap, const size_t bit);
 
 ///
+/// Flips all bits in the bitmap
+/// \param bitmap The bitmap to invert
+///
+void bitmap_invert(bitmap_t *const bitmap);
+
+///
 /// Find first set
 /// \param bitmap The bitmap
 /// \return The first one bit address, SIZE_MAX on error/not found

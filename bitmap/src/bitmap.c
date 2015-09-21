@@ -46,6 +46,12 @@ void bitmap_flip(bitmap_t *const bitmap, const size_t bit) {
     bitmap->data[bit >> 3] ^= mask[bit & 0x07];
 }
 
+void bitmap_invert(bitmap_t *const bitmap) {
+    for (size_t byte = 0; byte < bitmap->byte_count; ++byte) {
+        bitmap->data[byte] = ~bitmap->data[byte];
+    }
+}
+
 size_t bitmap_get_bits(const bitmap_t *const bitmap) {
     return bitmap->bit_count;
 }
