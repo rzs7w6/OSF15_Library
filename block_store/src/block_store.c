@@ -70,6 +70,7 @@ size_t block_store_allocate(block_store_t *const bs) {
         size_t free_block = bitmap_ffz(bs->fbm);
         if (free_block != SIZE_MAX) {
             bitmap_set(bs->fbm, free_block);
+            bitmap_set(bs->dbm, (free_block >> 3) / BLOCK_SIZE); // Set that FBM block as changed
             // not going to mark dbm because there's no change (yet)
             return free_block;
         }
@@ -79,23 +80,6 @@ size_t block_store_allocate(block_store_t *const bs) {
     block_store_errno = BS_PARAM;
     return 0;
 }
-
-
-size_t block_store_request(block_store_t *const bs, size_t block_id) {
-    if (bs && bs->fbm && BLOCKID_VALID(block_id)) {
-        if (!bitmap_test(bs->fbm, block_id)) {
-            bitmap_set(bs->fbm, block_id);
-            block_store_errno = BS_OK;
-            return block_id;
-        } else {
-            block_store_errno = BS_IN_USE;
-            return 0;
-        }
-    }
-    block_store_errno = BS_PARAM;
-    return 0;
-}
-
 
 size_t block_store_release(block_store_t *const bs, const size_t block_id) {
     if (bs && bs->fbm && BLOCKID_VALID(block_id)) {
@@ -110,7 +94,6 @@ size_t block_store_release(block_store_t *const bs, const size_t block_id) {
     block_store_errno = BS_PARAM;
     return 0;
 }
-
 
 size_t block_store_read(const block_store_t *const bs, const size_t block_id, void *buffer, const size_t nbytes, const size_t offset) {
     if (bs && bs->fbm && bs->data_blocks && BLOCKID_VALID(block_id)
@@ -127,7 +110,6 @@ size_t block_store_read(const block_store_t *const bs, const size_t block_id, vo
     block_store_errno = BS_PARAM;
     return 0;
 }
-
 
 size_t block_store_write(block_store_t *const bs, const size_t block_id, const void *buffer, const size_t nbytes, const size_t offset) {
     if (bs && bs->fbm && bs->dbm && bs->data_blocks && BLOCKID_VALID(block_id)
