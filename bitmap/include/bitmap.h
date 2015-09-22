@@ -11,10 +11,9 @@
 typedef struct bitmap bitmap_t;
 
 // WARNING: Bit requests outside the bitmap and NULL pointers WILL result in a segfault
-// This is meant to be a high performance library (except the terrible ffs/ffz implementation),
-//  so it assumes you're going to use it right.
+// This was originally a high performance C++ library, so the C translation assumes you're using it right.
 
-// V2: errno? flz/fls?
+// But is there really such a thing as a high-performance shared library?
 
 ///
 /// Sets requested bit in bitmap

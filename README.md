@@ -22,9 +22,12 @@ Current libraries:
 		    - Dyn's core already supports this, the API doesn't.
 		    	- I didn't want to write more unit tests...
 
+- block_store (v1.0)
+	- Generic in-memory block storage system with file import/export
+
 Coming soon:
 - block_store (v2.0)
-	- Generic in-memory block storage system (with optional file syncing)
+	- Just way better
 	- Wishlist:
 		- Better utility implementation that uses blocks instead of trying the full request at once
 		- Make in-memory optional (add flag, detect and switch operation modes in funcs that depend on it)

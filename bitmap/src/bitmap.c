@@ -1,14 +1,16 @@
 #include "../include/bitmap.h"
 
+// Just the one for now. Indicates we're an overlay and should not free
+// (also, make sure that ALL is as wide as ll of the flags)
+typedef enum {NONE = 0x00, OVERLAY = 0x01, ALL = 0xFF} BITMAP_FLAGS;
+
 struct bitmap {
     unsigned leftover_bits; // Packing will increase this to an int anyway
-    unsigned flags; // Generic place to store flags. Not enough flags to worry about width yet.
+    BITMAP_FLAGS flags; // Generic place to store flags. Not enough flags to worry about width yet.
     uint8_t *data;
     size_t bit_count, byte_count;
 };
 
-// Just the one for now. Indicates we're an overlay and should not free
-typedef enum {NONE = 0x00, OVERLAY = 0x01} BITMAP_FLAGS;
 
 #define FLAG_CHECK(bitmap, flag) (bitmap->flags & flag)
 // Not sure I want these

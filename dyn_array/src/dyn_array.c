@@ -1,7 +1,13 @@
 #include "../include/dyn_array.h"
 
+// Flag values
+// SHRUNK to indicate shrink_to_fit was called and size needs to be rehandled
+// SORTED to track if the objects have been sorted by us (sorted is set by sort and unset by insert/push)
+// these are just ideas
+//typedef enum {NONE = 0x00, SHRUNK = 0x01, SORTED = 0x02, ALL = 0xFF} DYN_FLAGS;
+
 struct dyn_array {
-    // unsigned flags;
+    // DYN_FLAGS flags;
     size_t capacity;
     size_t size;
     size_t data_size;
@@ -21,11 +27,6 @@ struct dyn_array {
 // Gets the size (in bytes) of n dyn_array elements
 #define DYN_SIZE_N_ELEMS(dyn_array_ptr, n) (dyn_array_ptr->data_size * (n))
 
-// Flag values
-// SHRUNK to indicate shrink_to_fit was called and size needs to be rehandled
-// SORTED to track if the objects have been sorted by us (sorted is set by sort and unset by insert/push)
-// these are just ideas
-//typedef enum {NONE = 0x00, SHRUNK = 0x01, SORTED = 0x02} DYN_FLAGS;
 
 
 // Modes of operation for dyn_shift

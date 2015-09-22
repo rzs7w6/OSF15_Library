@@ -1,7 +1,12 @@
-cmake_minimum_required (VERSION 2.8.0)
-project (OSLibs)
+cmake_minimum_required (VERSION 3.0)
 
-#set(CMAKE_VERBOSE_MAKEFILE ON)
+project(OSLibs)
+
+# Neato
+#set(CMAKE_DISABLE_SOURCE_CHANGES ON)
+#set(CMAKE_DISABLE_IN_SOURCE_BUILD ON)
+
+set(CMAKE_VERBOSE_MAKEFILE ON)
 set(CMAKE_COLOR_MAKEFILE ON)
 
 # Ahh why does this not work...?
@@ -12,5 +17,10 @@ set(CMAKE_COLOR_MAKEFILE ON)
 #  set(ctest_test_args ${ctest_test_args} PARALLEL_LEVEL ${N})
 #endif()
 
-add_subdirectory(bitmap)
 add_subdirectory(dyn_array)
+
+add_subdirectory(bitmap)
+
+# My hero http://stackoverflow.com/a/16404000
+
+add_subdirectory(block_store) # depends on bitmap
