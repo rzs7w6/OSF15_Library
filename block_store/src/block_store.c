@@ -18,7 +18,6 @@ size_t utility_read_file(const int fd, uint8_t *buffer, const size_t count);
 size_t utility_write_file(const int fd, const uint8_t *buffer, const size_t count);
 
 struct block_store {
-    int fd;
     bitmap_t *dbm;
     bitmap_t *fbm;
     uint8_t *data_blocks;
