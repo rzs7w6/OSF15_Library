@@ -38,7 +38,7 @@ bool dyn_shift(dyn_array_t *const dyn_array, const size_t position, const size_t
 
 dyn_array_t *dyn_array_create(const size_t capacity, const size_t data_type_size, void (*destruct_func)(void *)) {
     if (data_type_size && capacity <= DYN_MAX_CAPACITY) {
-        dyn_array_t *dyn_array = (dyn_array_t *) malloc(sizeof(dyn_array_t));
+        dyn_array_t *dyn_array =  (dyn_array_t *) malloc(sizeof(dyn_array_t));
         if (dyn_array) {
             // would have inf loop if requested size was between DYN_MAX_CAPACITY
             // and SIZE_MAX
@@ -72,10 +72,9 @@ dyn_array_t *dyn_array_import(const void *const data, const size_t count, const 
     if (data && (dyn_array = dyn_array_create(count, data_type_size, destruct_func))) {
         if (count && !dyn_shift(dyn_array, 0, count, CREATE_GAP, (void *const) data)) {
             dyn_array_destroy(dyn_array);
-            dyn_array = NULL;
         }
     }
-    return dyn_array;
+    return NULL;
 }
 
 // Consting the pointer to discourage monkeying with it.
