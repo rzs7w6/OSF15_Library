@@ -513,6 +513,8 @@ void bitmap_test_a() {
     // 17
     assert(bitmap_B = bitmap_import(test_bit_count, bitmap_A->data));
     assert(memcmp(bitmap_B->data, bitmap_A->data, test_byte_count) == 0);
+    bitmap_destroy(bitmap_A);
+    bitmap_destroy(bitmap_B);
 }
 
 void bitmap_test_b() {
@@ -545,6 +547,8 @@ void bitmap_test_b() {
     bitmap_reset(bitmap_A, 57);
 
     assert(bitmap_ffz(bitmap_A) == 57);
+
+    bitmap_destroy(bitmap_A);
 }
 
 void bitmap_test_c() {
