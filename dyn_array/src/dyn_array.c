@@ -56,8 +56,8 @@ dyn_array_t *dyn_array_create(const size_t capacity, const size_t data_type_size
                 // we're done?
                 return dyn_array;
             }
+            free(dyn_array);
         }
-        free(dyn_array);
     }
     return NULL;
 }
