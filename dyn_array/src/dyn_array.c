@@ -74,7 +74,7 @@ dyn_array_t *dyn_array_import(const void *const data, const size_t count, const 
             dyn_array_destroy(dyn_array);
         }
     }
-    return NULL;
+    return dyn_array;
 }
 
 // Consting the pointer to discourage monkeying with it.
@@ -90,9 +90,7 @@ void dyn_array_destroy(dyn_array_t *dyn_array) {
     if (dyn_array) {
         dyn_array_clear(dyn_array);
         free(dyn_array->array);
-        dyn_array->array = NULL;
-        // Bad/dangerous assumption, don't make it
-        //free(dyn_array);
+        free(dyn_array);
     }
 }
 

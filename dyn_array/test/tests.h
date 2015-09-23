@@ -516,7 +516,6 @@ void run_basic_tests_a() {
     // PUSH_FRONT TESTS COMPLETE
 
     dyn_array_destroy(dyn_a);
-    dyn_array_destroy(dyn_b);
 }
 
 void run_basic_tests_b() {
@@ -941,13 +940,14 @@ void run_basic_tests_d() {
     dyn_array_t *dyn_a = NULL;
 
     // 1 IMPORT & 2 EXPORT
-    dyn_a = dyn_array_import(DATA_BLOCKS[0], 0, 1, NULL);
+    dyn_a = dyn_array_import(DATA_BLOCKS[0], 1, 1, NULL);
     assert(dyn_a);
-    assert(dyn_a->size == 0);
+    assert(dyn_a->size == 1);
     assert(dyn_a->capacity == 16);
     assert(dyn_a->data_size == 1);
     assert(dyn_a->destructor == NULL);
     assert(dyn_a->array);
+    assert(dyn_array_pop_back(dyn_a));
     assert(dyn_array_export(dyn_a) == NULL);
 
     dyn_array_destroy(dyn_a);
