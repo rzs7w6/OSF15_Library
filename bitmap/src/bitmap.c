@@ -158,6 +158,7 @@ bitmap_t *bitmap_initialize(size_t n_bits, BITMAP_FLAGS flags) {
             // Then a return at the end
 
             if (FLAG_CHECK(bitmap, OVERLAY)) {
+                // don't mess with data, caller will set it
                 bitmap->data = NULL;
                 return bitmap;
             } else {

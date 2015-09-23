@@ -1,5 +1,5 @@
-cmake_minimum_required (VERSION 3.0)
-project(block_store VERSION 1.0)
+cmake_minimum_required (VERSION 2.8)
+project(block_store)
 
 set(CMAKE_C_FLAGS "-std=c99 -Wall -Werror")
 set(CMAKE_BUILD_TYPE RelWithDebInfo)

@@ -1,5 +1,5 @@
-cmake_minimum_required (VERSION 3.0)
-project(dyn_array VERSION 1.2.2)
+cmake_minimum_required (VERSION 2.8)
+project(dyn_array)
 
 set(CMAKE_C_FLAGS "-std=c99 -Wall -Werror")
 set(CMAKE_BUILD_TYPE RelWithDebInfo)

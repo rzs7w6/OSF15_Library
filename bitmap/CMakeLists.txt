@@ -1,5 +1,5 @@
-cmake_minimum_required (VERSION 3.0)
-project(bitmap VERSION 1.4)
+cmake_minimum_required (VERSION 2.8)
+project(bitmap)
 
 set(CMAKE_C_FLAGS "-std=c99 -Wall -Werror")
 set(CMAKE_BUILD_TYPE RelWithDebInfo)
