@@ -1,6 +1,6 @@
 # OS F15 Libraries
 Current libraries:
-- bitmap (v1.4)
+- bitmap (v1.5)
 	- It's a bitmap, it stores bits!
 	- Wishlist:
 		- FLZ/FLS

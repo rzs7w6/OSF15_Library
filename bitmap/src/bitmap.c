@@ -18,16 +18,42 @@ struct bitmap {
 // #define FLAG_UNSET(bitmap, flag) bitmap->flags &= ~flag
 
 // lookup instead of always shifting bits. Should be faster? Confirmed: 10% faster
-// Also, using native int width because it should be faster as well. - Negligible/indeterminate
-const static uint8_t mask[] = { 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80 };
+// Also, using native int width because it should be faster as well? - Negligible/indeterminate
+//  Won't help until bitmap uses native width for the array
+const static uint8_t mask[8] = { 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80 };
 
-const static uint8_t invert_mask[] = { 0xFE, 0xFD, 0xFB, 0xF7, 0xEF, 0xDF, 0xBF, 0x7F};
-// I won't lie, I only knew 0xFE without getting a calculator
+// Mask for all bits at index i and lower
+const static uint8_t mask_down_inclusive[8] = {0x01, 0x03, 0x07, 0x0F, 0x1F, 0x3F, 0x7F, 0xFF};
+
+// Inverted mask
+const static uint8_t invert_mask[8] = { 0xFE, 0xFD, 0xFB, 0xF7, 0xEF, 0xDF, 0xBF, 0x7F};
 
 // Way more testing than I should waste my time on suggested uint8_t was faster
 // but it may still be negligible/indeterminate.
 // Since the data store is uint8_t, we already get punished for our bad alignment
 // so this doesn't really matter until everything gets moved to generic int
+
+// Total bits set in the given byte in a handy lookup table
+// Macros, man...
+// http://graphics.stanford.edu/~seander/bithacks.html#CountBitsSetTable
+#define B2(n) n,     n+1,     n+1,     n+2
+#define B4(n) B2(n), B2(n+1), B2(n+1), B2(n+2)
+#define B6(n) B4(n), B4(n+1), B4(n+1), B4(n+2)
+static const uint8_t bit_totals[256] = { B6(0), B6(1), B6(1), B6(2) };
+#undef B6
+#undef B4
+#undef B2
+// There is an alternative for getting bit count that only loops as many times as there are bits set
+// but that's still a loop and this table is 256B.
+/*
+    unsigned int v; // count the number of bits set in v
+    unsigned int c; // c accumulates the total bits set in v
+
+    for (c = 0; v; v >>= 1)
+    {
+      c += v & 1;
+    }
+*/
 
 // A place to generalize the creation process and setup
 bitmap_t *bitmap_initialize(size_t n_bits, BITMAP_FLAGS flags);
@@ -70,6 +96,25 @@ size_t bitmap_ffz(const bitmap_t *const bitmap) {
         return (result == bitmap->bit_count ? SIZE_MAX : result);
     }
     return SIZE_MAX;
+}
+
+size_t bitmap_total_set(const bitmap_t *const bitmap) {
+    size_t total = 0;
+    if (bitmap) {
+        // If we have leftover, stop a byte early because we have to handle it differently.
+        size_t stop = bitmap->leftover_bits ? bitmap->byte_count - 1 : bitmap->byte_count;
+        for (size_t idx = 0; idx < stop; ++idx) {
+            total += bit_totals[bitmap->data[idx]];
+        }
+        if (bitmap->leftover_bits) {
+            // haha, this is readable
+            // get the byte at the end of the bitmap, mask it so we're only looking at the bits in use
+            // then feed that to the bit_total lookup so we don't count the bits past our bit total
+            // (which whould be considered undetermined)
+            total += bit_totals[bitmap->data[bitmap->byte_count - 1] & mask_down_inclusive[bitmap->leftover_bits - 1]];
+        }
+    }
+    return total;
 }
 
 void bitmap_for_each(const bitmap_t *const bitmap, void (*func)(size_t, void *), void *args) {
@@ -139,7 +184,6 @@ void bitmap_destroy(bitmap_t *bitmap) {
 // HERE BE DRAGONS
 ///
 //
-
 
 bitmap_t *bitmap_initialize(size_t n_bits, BITMAP_FLAGS flags) {
     if (n_bits) { // must be non-zero

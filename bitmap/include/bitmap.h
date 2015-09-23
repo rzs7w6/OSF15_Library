@@ -65,6 +65,12 @@ size_t bitmap_ffs(const bitmap_t *const bitmap);
 size_t bitmap_ffz(const bitmap_t *const bitmap);
 
 ///
+/// Count all bits set
+/// \param bitmap the bitmap
+/// \return the total number of bits that are set in the bitmap
+///
+size_t bitmap_total_set(const bitmap_t *const bitmap);
+///
 /// For each loop for all set bits
 ///  (Arguments passed to func are saved across calls)
 /// \param bitmap The bitmap

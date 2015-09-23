@@ -86,6 +86,13 @@
     27. Normal use, no bits set
     28. Fail, NULL bitmap
     29. fail, NULL func
+
+    size_t bitmap_total_set(const bitmap_t *const bitmap);
+    30. Normal, some bits set
+    31. Normal, no bits set
+    32. Normal, all bits set
+    33. Normal, with weird bit count
+    34. Fail, NULL
 */
 
 bool memcmp_fixed(const uint8_t *const data, uint8_t fixed_value, size_t nbytes) {
@@ -122,7 +129,7 @@ int main() {
     // FFS/FFZ
     bitmap_test_b();
 
-    // OVERLAY INVERT
+    // OVERLAY INVERT TOTAL_SET
     bitmap_test_c();
 
     // Done. GO TEAM!
@@ -577,12 +584,6 @@ void bitmap_test_c() {
         assert(arr[i] == 0x00);
     }
 
-    // void bitmap_for_each(const bitmap_t *const bitmap, void (*func)(size_t, void *), void *args);
-    //26. Normal use, has bits set
-    //27. Normal use, no bits set
-    //28. Fail, NULL bitmap
-    //29. fail, NULL func
-
     size_t val = 1;
 
     // 27
@@ -605,7 +606,25 @@ void bitmap_test_c() {
     bitmap_for_each(NULL, NULL, &val);
     assert(for_each_counter == 35);
 
+    // 30
+    memset(arr, 0xAC, 10);
+    assert(bitmap_total_set(bitmap_a) == 40);
 
-    bitmap_destroy(bitmap_a); // should segfault if we free it by accident
+    // 31
+    memset(arr, 0x00, 10);
+    assert(bitmap_total_set(bitmap_a) == 0);
+
+    // 32
+    memset(arr, 0xFF, 10);
+    assert(bitmap_total_set(bitmap_a) == 80);
+
+    // 34
+    assert(bitmap_total_set(NULL) == 0);
+
+    // 33
+    bitmap_destroy(bitmap_a); // should segfault if we free our overlay by accident
+    bitmap_a = bitmap_overlay(35,arr);
+    assert(bitmap_a);
+    assert(bitmap_total_set(bitmap_a) == 35);
 
 }
