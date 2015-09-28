@@ -11,26 +11,23 @@
                    (fprintf(stderr,"%s,%d: assertion '%s' failed\n",__FILE__, __LINE__, #e), \
                     fflush(stdout), abort()))
 
-// I'm not typing that out 5 million times.
-// Change this in V2.
-#define bs_errno block_store_errno
-
 /*
 
     block_store_t *block_store_create();
     1. NORMAL. Assert all contents and errno
     ... that's it, we can't do more without a better testing system
 
-    void block_store_destroy(block_store_t *const bs);
-    1. NORMAL
-    2. FAIL, null bs. Assert we don't crash and bs_errno is set
+    void block_store_destroy(block_store_t *const bs, const bs_flush_flag flush);
+    1. NORMAL, no flush
+    2. NORMAL, flush
+    SPECIAL 3. FAIL, null bs. Assert we don't crash and bs_errno is set
 
     size_t block_store_allocate(block_store_t *const bs);
     1. NORMAL, Assert can allocate all blocks, check errno and fbm, dbm
     2. FAIL, Fail on full, check errno
     3. FAIL, null bs, check errno
 
-    size_t block_store_release(block_store_t *const bs, const size_t block_id);
+    void block_store_release(block_store_t *const bs, const size_t block_id);
     1. NORMAl, assert FBM/DBM and errno
     2. FAIL, reserved block, assert fbm/sbm/errno
     3. FAIL, null bs, assert errno
@@ -57,15 +54,34 @@
     4. FAIL, null filename
     5. FAIL, bad file size
 
+    EXPORT IS DEAD, LONG LIVE THE LINK
     size_t block_store_export(const block_store_t *const bs, const char *const filename);
     1. NORMAL
     2. FAIL, bad filename (...? is that a thing?)
     3. FAIL, NULL filename
     4. FAIL, null bs
 
+    void block_store_link(block_store_t *const bs, const char *const filename);
+    1. NORMAL, ...? Some file - check DBM is cleared
+    2. FAIL, already linked - check DBM not clear
+    3. FAIL, NULL filename - check DBM not clear
+    4. FAIL, NULL object
+
+    void block_store_unlink(block_store_t *const bs, const bs_flush_flag flush);
+    1. NORMAL, no flush
+    2. NORMAL, flush
+    2. FAIL, no link
+    3. FAIL, NULL
+
+    void block_store_flush(block_store_t *const bs);
+    1. NORMAL, data to write
+    2. NORMAL, no data to write
+    3. FAIL, no link
+    4. FAIL, NULL object
+
 */
 
-// ALLOCATE RELEASE CREATE DESTROY
+// ALLOCATE RELEASE CREATE DESTROY(NON-SPECIAL)
 void basic_tests_a();
 
 // IMPORT EXPORT
@@ -74,12 +90,10 @@ void basic_tests_b();
 // READ WRITE
 void basic_tests_c();
 
+//  LINK UNLINK FLUSH DESTROY(SPECIAL)
+void basic_tests_d();
+
 int main() {
-
-    puts("Place your test code here!");
-
-
-
 
     puts("Running autotests, sit back and relax, it'll be awhile...");
 
@@ -95,8 +109,12 @@ int main() {
 
     puts("C tests passed...");
 
-    puts("TESTS COMPLETE");
+    // These tests are kinda spotty
+    basic_tests_d();
 
+    puts("D tests passed...");
+
+    puts("TESTS COMPLETE");
 
 }
 
@@ -114,7 +132,9 @@ void basic_tests_a() {
 
     // assert dbm, fbm, and fd
 
-    for (size_t i = 0; i < FBM_SIZE; ++i) {
+    assert(bs_a->fd == -1);
+
+    for (size_t i = 0; i < FBM_BLOCK_COUNT; ++i) {
         assert(bitmap_test(bs_a->fbm, i));
         assert(bitmap_test(bs_a->dbm, i));
     }
@@ -124,13 +144,14 @@ void basic_tests_a() {
     // Check allocate up to full & fail
     for (size_t i = 8; i < BLOCK_COUNT; ++i) {
         assert(bitmap_test(bs_a->fbm, i) == false);
-        assert(bitmap_test(bs_a->dbm, i) == false); // CHANGE IN V2
+        assert(bitmap_test(bs_a->dbm, i));
 
         assert(i == block_store_allocate(bs_a));
         assert(bs_errno == BS_OK);
 
         assert(bitmap_test(bs_a->fbm, i));
-        assert(bitmap_test(bs_a->dbm, i) == false); // CHANGE IN V2
+        assert(bitmap_test(bs_a->dbm, i));
+        assert(bitmap_test(bs_a->dbm, FBM_BLOCK_CHANGE_LOCATION(i)));
     }
 
     // ALLOCATE 2
@@ -140,29 +161,30 @@ void basic_tests_a() {
 
     // Arbitrary release and reallocate
 
-    assert(block_store_release(bs_a, (BLOCK_COUNT >> 3) + 5) == ((BLOCK_COUNT >> 3) + 5));
+    block_store_release(bs_a, (BLOCK_COUNT >> 3) + 5);
     assert(bs_errno == BS_OK);
 
     assert(bitmap_test(bs_a->fbm, (BLOCK_COUNT >> 3) + 5) == false);
-    assert(bitmap_test(bs_a->dbm, (BLOCK_COUNT >> 3) + 5) == false); // CHANGE IN v2
+    assert(bitmap_test(bs_a->dbm, (BLOCK_COUNT >> 3) + 5));
+    assert(bitmap_test(bs_a->dbm, FBM_BLOCK_CHANGE_LOCATION((BLOCK_COUNT >> 3) + 5)));
 
     assert(block_store_allocate(bs_a) == ((BLOCK_COUNT >> 3) + 5));
     assert(bs_errno == BS_OK);
 
     // Free back to empty
 
-    for (size_t i = BLOCK_COUNT; i > FBM_SIZE; --i) {
+    for (size_t i = BLOCK_COUNT; i > FBM_BLOCK_COUNT; --i) {
         assert(bitmap_test(bs_a->fbm, i - 1));
-        assert(bitmap_test(bs_a->dbm, i - 1) == false); // CHANGE IN V2
+        assert(bitmap_test(bs_a->dbm, i - 1));
 
-        assert(i - 1 == block_store_release(bs_a, i - 1));
+        block_store_release(bs_a, i - 1);
         assert(bs_errno == BS_OK);
 
         assert(bitmap_test(bs_a->fbm, i - 1) == false);
-        assert(bitmap_test(bs_a->dbm, i - 1) == false); // CHANGE IN V2
+        assert(bitmap_test(bs_a->dbm, i - 1));
     }
 
-    for (size_t i = 0; i < FBM_SIZE; ++i) {
+    for (size_t i = 0; i < FBM_BLOCK_COUNT; ++i) {
         assert(bitmap_test(bs_a->fbm, i));
         assert(bitmap_test(bs_a->dbm, i));
     }
@@ -170,21 +192,21 @@ void basic_tests_a() {
     // CREATE tested and clear for use
 
     // RELEASE 2
-    assert(block_store_release(bs_a, 0) == 0);
+    block_store_release(bs_a, 0);
     assert(bs_errno == BS_PARAM);
 
     assert(bitmap_test(bs_a->fbm, 0));
     assert(bitmap_test(bs_a->dbm, 0));
 
-    assert(block_store_release(bs_a, FBM_SIZE - 1) == 0);
+    block_store_release(bs_a, FBM_BLOCK_COUNT - 1);
     assert(bs_errno == BS_PARAM);
 
-    assert(bitmap_test(bs_a->fbm, FBM_SIZE - 1));
-    assert(bitmap_test(bs_a->dbm, FBM_SIZE - 1));
+    assert(bitmap_test(bs_a->fbm, FBM_BLOCK_COUNT - 1));
+    assert(bitmap_test(bs_a->dbm, FBM_BLOCK_COUNT - 1));
 
     // RELEASE 3
 
-    assert(block_store_release(NULL, 0) == 0);
+    block_store_release(NULL, 0);
     assert(bs_errno == BS_PARAM);
 
     // ALLOCATE 3
@@ -197,15 +219,15 @@ void basic_tests_a() {
 
     // DESTROY 2
 
-    block_store_destroy(NULL);
+    block_store_destroy(NULL, BS_NO_FLUSH);
     assert(bs_errno == BS_PARAM);
 
     // DESTROY 1
 
-    block_store_destroy(bs_a);
+    block_store_destroy(bs_a, BS_NO_FLUSH);
     assert(bs_errno == BS_OK);
 
-    // DESTROY tested and clear for use
+    // DESTROY(NON-SPECIAL) tested and clear for use
 }
 
 
@@ -228,12 +250,12 @@ void basic_tests_b() {
     assert(bs_a);
     assert(bs_errno == BS_OK);
 
-    for (size_t i = 0; i < FBM_SIZE; ++i) {
+    for (size_t i = 0; i < FBM_BLOCK_COUNT; ++i) {
         assert(bitmap_test(bs_a->fbm, i));
         assert(bitmap_test(bs_a->dbm, i) == false);
     }
 
-    for (size_t i = BLOCK_COUNT; i > FBM_SIZE; --i) {
+    for (size_t i = BLOCK_COUNT; i > FBM_BLOCK_COUNT; --i) {
         assert(bitmap_test(bs_a->fbm, i - 1) == false);
         assert(bitmap_test(bs_a->dbm, i - 1) == false);
     }
@@ -257,43 +279,47 @@ void basic_tests_b() {
     assert(bs_b == NULL);
     assert(bs_errno == BS_FILE_ACCESS);
 
+    //IMPORT 5
     bs_b = block_store_import("bad.bs");
     assert(bs_b == NULL);
     assert(bs_errno == BS_FILE_ACCESS);
 
     // IMPORT tested and cleared for use
 
-    // EXPORT 1
-    size_t ret_size = block_store_export(bs_a, "new_test.bs");
-    assert(ret_size == (BLOCK_COUNT * BLOCK_SIZE));
-    assert(bs_errno == BS_OK);
-    assert(0 == system("diff test.bs new_test.bs"));
+    /*
+        // EXPORT 1
+        size_t ret_size = block_store_export(bs_a, "new_test.bs");
+        assert(ret_size == (BLOCK_COUNT * BLOCK_SIZE));
+        assert(bs_errno == BS_OK);
+        assert(0 == system("diff test.bs new_test.bs"));
 
-    // EXPORT 2
+        // EXPORT 2
 
-    // not sure what this will do...
-    // It makes a file with a messed up name. Hmm.
-    //assert(block_store_export(bs_a, "\n") == 0);
-    //assert(bs_errno == BS_FILE_ACCESS);
-    // WONTFIX, name sanitation isn't our problem. If the OS allows it, so should we
+        // not sure what this will do...
+        // It makes a file with a messed up name. Hmm.
+        //assert(block_store_export(bs_a, "\n") == 0);
+        //assert(bs_errno == BS_FILE_ACCESS);
+        // WONTFIX, name sanitation isn't our problem. If the OS allows it, so should we
 
-    assert(block_store_export(bs_a, "") == 0);
-    assert(bs_errno == BS_FILE_ACCESS);
+        assert(block_store_export(bs_a, "") == 0);
+        assert(bs_errno == BS_FILE_ACCESS);
 
-    // EXPORT 3
+        // EXPORT 3
 
-    assert(block_store_export(bs_a, NULL) == 0);
-    assert(bs_errno == BS_PARAM);
+        assert(block_store_export(bs_a, NULL) == 0);
+        assert(bs_errno == BS_PARAM);
 
-    // EXPORT 4
-    assert(block_store_export(NULL, "should_not_create.bs") == 0);
-    assert(bs_errno == BS_PARAM);
+        // EXPORT 4
+        assert(block_store_export(NULL, "should_not_create.bs") == 0);
+        assert(bs_errno == BS_PARAM);
 
-    block_store_destroy(bs_a);
+    */
 
-    system("rm bad.bs should_not_create.bs new_test.bs");
 
-    // IMPORT and EXPORT tested and cleared for use
+
+    block_store_destroy(bs_a, BS_NO_FLUSH);
+
+    system("rm test.bs bad.bs should_not_create.bs new_test.bs");
 
 }
 
@@ -302,11 +328,13 @@ void basic_tests_b() {
 void basic_tests_c() {
 
     block_store_t *bs_a = NULL;
-    const char *const file = "test.bs";
     uint16_t arr[(BLOCK_SIZE >> 1) + 128];
+    const char *const file = "test.bs";
+    assert(0 == system("./generate_drive e test.bs"));
 
     bs_a = block_store_import(file);
     assert(bs_a);
+
 
     size_t blk_id = block_store_allocate(bs_a);
     assert(blk_id);
@@ -317,23 +345,23 @@ void basic_tests_c() {
     size_t res_size = block_store_read(bs_a, blk_id, arr, BLOCK_SIZE, 0);
     assert(bs_errno == BS_OK);
     assert(res_size == BLOCK_SIZE);
-    assert(memcmp(arr, bs_a->data_blocks + (BLOCK_SIZE * (blk_id - FBM_SIZE)), BLOCK_SIZE) == 0);
+    assert(memcmp(arr, bs_a->data_blocks + (BLOCK_SIZE * blk_id), BLOCK_SIZE) == 0);
 
     // READ 1
 
     size_t arb_size = (BLOCK_SIZE >> 2) + 7;
     size_t arb_offset = BLOCK_SIZE >> 3;
     res_size = block_store_read(bs_a, blk_id, arr, arb_size, arb_offset);
-    assert(memcmp(arr, bs_a->data_blocks + (BLOCK_SIZE * (blk_id - FBM_SIZE)), arb_size) == 0);
+    assert(memcmp(arr, bs_a->data_blocks + (BLOCK_SIZE * blk_id), arb_size) == 0);
     assert(bs_errno == BS_OK);
     assert(res_size == (BLOCK_SIZE >> 2) + 7);
 
     // READ 2
 
     res_size = block_store_read(bs_a, blk_id + 1, arr, BLOCK_SIZE, 0);
-    assert(bs_errno == BS_FBM_REQUEST_MISMATCH);
+    assert(bs_errno == BS_REQUEST_MISMATCH);
     assert(res_size ==  BLOCK_SIZE);
-    assert(memcmp(arr, bs_a->data_blocks + (BLOCK_SIZE * (blk_id + 1 - FBM_SIZE)), BLOCK_SIZE) == 0);
+    assert(memcmp(arr, bs_a->data_blocks + (BLOCK_SIZE * (blk_id + 1)), BLOCK_SIZE) == 0);
 
     // READ 4
 
@@ -384,7 +412,8 @@ void basic_tests_c() {
     res_size = block_store_write(bs_a, blk_id, arr, BLOCK_SIZE, 0);
     assert(bs_errno == BS_OK);
     assert(res_size == BLOCK_SIZE);
-    assert(memcmp(arr, bs_a->data_blocks + (BLOCK_SIZE * (blk_id - FBM_SIZE)), BLOCK_SIZE) == 0);
+    assert(FLAG_CHECK(bs_a, DIRTY));
+    assert(memcmp(arr, bs_a->data_blocks + (BLOCK_SIZE * blk_id), BLOCK_SIZE) == 0);
     assert(bitmap_test(bs_a->dbm, blk_id));
 
     // WRITE 1
@@ -392,18 +421,20 @@ void basic_tests_c() {
     arb_size = (BLOCK_SIZE >> 2) + 7;
     arb_offset = BLOCK_SIZE >> 3;
     res_size = block_store_write(bs_a, blk_id, arr, arb_size, arb_offset);
-    assert(memcmp(arr, bs_a->data_blocks + (BLOCK_SIZE * (blk_id - FBM_SIZE)), arb_size) == 0);
+    assert(memcmp(arr, bs_a->data_blocks + (BLOCK_SIZE * blk_id), arb_size) == 0);
     assert(bs_errno == BS_OK);
+    assert(FLAG_CHECK(bs_a, DIRTY));
     assert(res_size == (BLOCK_SIZE >> 2) + 7);
     assert(bitmap_test(bs_a->dbm, blk_id));
 
     // WRITE 2
 
     res_size = block_store_write(bs_a, blk_id + 1, arr, BLOCK_SIZE, 0);
-    assert(bs_errno == BS_FBM_REQUEST_MISMATCH);
+    assert(bs_errno == BS_REQUEST_MISMATCH);
     assert(res_size ==  BLOCK_SIZE);
+    assert(FLAG_CHECK(bs_a, DIRTY));
     assert(bitmap_test(bs_a->dbm, blk_id + 1));
-    assert(memcmp(arr, bs_a->data_blocks + (BLOCK_SIZE * (blk_id + 1 - FBM_SIZE)), BLOCK_SIZE) == 0);
+    assert(memcmp(arr, bs_a->data_blocks + (BLOCK_SIZE * (blk_id + 1)), BLOCK_SIZE) == 0);
 
     // WRITE 4
 
@@ -447,9 +478,116 @@ void basic_tests_c() {
     assert(bs_errno == BS_PARAM);
     assert(res_size ==  0);
 
+    block_store_destroy(bs_a, BS_NO_FLUSH);
 
     system("rm test.bs");
 
 
+}
+
+void basic_tests_d() {
+
+    block_store_t *bs_a;
+    const char *const file = "test.bs";
+    assert(0 == system("./generate_drive e test.bs"));
+
+    bs_a = block_store_import(file);
+    assert(bs_a);
+    assert(!FLAG_CHECK(bs_a, DIRTY));
+
+    // UNLINK 1
+    block_store_unlink(bs_a, BS_NO_FLUSH);
+    assert(bs_errno == BS_OK);
+
+
+    // LINk 1
+    block_store_link(bs_a, file);
+    assert(bs_errno == BS_OK);
+    assert(FLAG_CHECK(bs_a, FILE_LINKED));
+    assert(!FLAG_CHECK(bs_a, DIRTY));
+    assert(bs_a->fd != -1);
+    for (size_t i = 0; i < BLOCK_COUNT; ++i) {
+        assert(!bitmap_test(bs_a->dbm, i));
+    }
+
+    // LINK 2
+    block_store_link(bs_a, file);
+    assert(bs_errno == BS_LINK_EXISTS);
+    assert(FLAG_CHECK(bs_a, FILE_LINKED));
+    assert(bs_a->fd != -1);
+
+    // LINK 3
+    block_store_link(bs_a, NULL);
+    assert(bs_errno == BS_PARAM);
+    assert(FLAG_CHECK(bs_a, FILE_LINKED));
+
+    // LINK 4
+    block_store_link(NULL, file);
+    assert(bs_errno == BS_PARAM);
+
+    // UNLINK 2
+    block_store_unlink(bs_a, BS_FLUSH);
+    assert(bs_errno == BS_OK);
+
+    // UNLINK 3
+    block_store_unlink(bs_a, BS_FLUSH);
+    assert(bs_errno == BS_NO_LINK);
+
+    // UNLINK 4
+    block_store_link(NULL, file);
+    assert(bs_errno == BS_PARAM);
+
+
+    // UNLINK and LINK tested and cleared for use
+
+    /*
+        size_t block_store_flush(block_store_t *const bs);
+        1. NORMAL, data to write
+        2. NORMAL, no data to write
+        3. FAIL, no link
+        4. FAIL, NULL object
+    */
+
+    block_store_link(bs_a, "new_test.bs");
+    assert(bs_errno == BS_OK);
+    assert(!FLAG_CHECK(bs_a, DIRTY));
+
+    block_store_flush(bs_a);
+    assert(bs_errno == BS_OK);
+    assert(0 == system("diff test.bs new_test.bs"));
+
+    // A minor DBM check since the create function always formats the DBM
+    size_t allocated = block_store_allocate(bs_a);
+    assert(allocated);
+    assert(bs_errno == BS_OK);
+    assert(FLAG_CHECK(bs_a, DIRTY));
+    assert(bitmap_test(bs_a->dbm, FBM_BLOCK_CHANGE_LOCATION(allocated)));
+
+    // Just write some data to the allocated block
+    assert(block_store_write(bs_a, allocated, bitmap_export(bs_a->fbm), 1024, 0) == 1024);
+
+    // FLUSH 1
+    block_store_flush(bs_a);
+    assert(bs_errno == BS_OK);
+    // they now differ, but we'd have to check actual data manually
+    assert(system("diff test.bs new_test.bs"));
+
+    // FLUSH 2
+    block_store_flush(bs_a);
+    assert(bs_errno == BS_OK);
+
+    // FLUSH 3
+    block_store_unlink(bs_a, BS_NO_FLUSH);
+    assert(bs_errno == BS_OK);
+    block_store_flush(bs_a);
+    assert(bs_errno == BS_NO_LINK);
+
+    // FLUSH 4
+    block_store_flush(NULL);
+    assert(bs_errno == BS_PARAM);
+
+    // FLush tested and clear for use (?)
+
+    system("rm test.bs");
 
 }

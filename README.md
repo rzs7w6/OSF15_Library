@@ -22,15 +22,12 @@ Current libraries:
 		    - Dyn's core already supports this, the API doesn't.
 		    	- I didn't want to write more unit tests...
 
-- block_store (v1.0)
-	- Generic in-memory block storage system with file import/export
-
-Coming soon:
 - block_store (v2.0)
-	- Just way better
+	- Generic in-memory block storage system with optional file linking
 	- Wishlist:
-		- Better utility implementation that uses blocks instead of trying the full request at once
-		- Make in-memory optional (add flag, detect and switch operation modes in funcs that depend on it)
+		- Better testing. Flush testing is a little lighter than I'd like, but I'm tired of looking at it
+		- Better utility implementation, block based. Actually, may be better to just offload block work to the OS? (the way it is now)
+		- Make in-memory optional, add flag (FILE_BACKED) and detect and switch internal functions if it's set
 
 Eventually (maybe):
 - dyn_list

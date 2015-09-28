@@ -5,6 +5,7 @@
 #include <bitmap.h> // This header comes from OSF15_Library, make sre you install it!
 #include <fcntl.h>
 #include <sys/stat.h>
+#include <sys/types.h>
 #include <errno.h>
 #include <unistd.h>
 
@@ -40,7 +41,7 @@ typedef struct block_store block_store_t;
 			(which is a much bigger problem, if this is during export, the file might be broken, and if it's
 			dirng import, import fails)
 		BS_WARN is really just covering an edge case I decided to allow
-			BS_FBM_REQUEST_MISMATCH is set when you read/write to a block not marked as in use in the FBM
+			BS_REQUEST_MISMATCH is set when you read/write to a block not marked as in use
 			The read/write functions still return normally, but the errno isn't BS_OK.
 			Warning are meant to be just that, only a warning
 	Be sure to return the appropriate error category when a problem happens!
@@ -52,10 +53,15 @@ typedef struct block_store block_store_t;
 typedef enum {
     BS_OK = 0x00,
     BS_PARAM = 0x10,
-    BS_INTERNAL = 0x20, BS_FULL = 0x21, BS_IN_USE = 0x22, BS_NOT_IN_USE = 0x23,
+    BS_INTERNAL = 0x20, BS_FULL = 0x21, BS_IN_USE = 0x22, BS_NOT_IN_USE = 0x23, BS_NO_LINK = 0x24, BS_LINK_EXISTS = 0x25,
     BS_FATAL = 0x40, BS_FILE_ACCESS = 0x41, BS_FILE_IO = 0x42, BS_MEMORY = 0x43,
-    BS_WARN = 0x80, BS_FBM_REQUEST_MISMATCH = 0x81
-} block_store_status;
+    BS_WARN = 0x80, BS_REQUEST_MISMATCH = 0x81
+} bs_status;
+
+typedef enum {
+    BS_NO_FLUSH = 0x00,
+    BS_FLUSH = 0x01
+} bs_flush_flag;
 
 // All our functions return 0 on error instead of -1 because I didn't want to switch to ssize_t
 // because I ddin't want to lose that bit, and most functions have no reason to return 0
@@ -64,7 +70,7 @@ typedef enum {
 ///
 /// This is our errno... it's an errno.
 ///
-block_store_status block_store_errno = BS_OK;
+bs_status bs_errno = BS_OK;
 
 ///
 /// This creates a new BS device
@@ -74,9 +80,13 @@ block_store_t *block_store_create();
 
 ///
 /// Destroys the provided block storage device
+///  NOTE: If a flush is requested, it will only be ATTEMPTED.
+///   If the flush fails for ANY reason, the object will still be destructed
+///   If a flush is requested, the bs_errno will be set to the status of the flush operation
 /// \param bs BS device
+/// \param flush flag indicating whether a flush should be attempted before destruction
 ///
-void block_store_destroy(block_store_t *const bs);
+void block_store_destroy(block_store_t *const bs, const bs_flush_flag flush);
 
 ///
 /// Searches for a free block, makes it as in use, and returns the block's id
@@ -86,19 +96,26 @@ void block_store_destroy(block_store_t *const bs);
 size_t block_store_allocate(block_store_t *const bs);
 
 ///
+/// Attempts to allocate the requested block id
+/// \param bs the block store object
+/// \block_id the requested block identifier
+/// \return boolean indicating succes of operation
+///
+bool block_store_request(block_store_t *const bs, const size_t block_id);
+
+///
 /// Frees the specified block
 /// \param bs BS device
 /// \param block_id The block to free
-/// \return The block that was freed (block_id), 0 on error
 ///
-size_t block_store_release(block_store_t *const bs, const size_t block_id);
+void block_store_release(block_store_t *const bs, const size_t block_id);
 
 ///
 /// Reads data from the specified block and offset and writes it to the designated buffer
 /// \param bs BS device
 /// \param block_id Source block id
 /// \param buffer Data buffer to write to
-/// \param nbytes Number of bytes to read
+/// \param nbytes (non-zero) number of bytes to read
 /// \param offset Block read offset
 /// \return Number of bytes read, 0 on error
 ///
@@ -109,40 +126,65 @@ size_t block_store_read(const block_store_t *const bs, const size_t block_id, vo
 /// \param bs BS device
 /// \param block_id Destination block id
 /// \param buffer Data buffer to read from
-/// \param nbytes Number of bytes to write
+/// \param nbytes (non-zero) number of bytes to write
 /// \param offset Block write offset
 /// \return Number of bytes written, 0 on error
 ///
 size_t block_store_write(block_store_t *const bs, const size_t block_id, const void *buffer, const size_t nbytes, const size_t offset);
 
 ///
-/// Imports BS device from the given file
+/// Imports BS device from the given file and links to it
+/// A linked file will be updated with the latest changes via flush()
+/// (bs_errno is BS_NO_LINK if import was sccessful, but a link could not be established)
 /// \param filename The file to load
 /// \return Pointer to new BS device, NULL on error
 ///
 block_store_t *block_store_import(const char *const filename);
 
 ///
-/// Writes the entirety of the BS device to file, overwriting it if it exists
-/// \param bs BS device
-/// \param filename The file to write to
-/// \return Number of bytes written, 0 on error
+/// Links and syncs the burrent state of the block store with the new file
+///  If the file does not extist, it will be created
+/// NOTE: Linking will fail if the file is already linked.
+/// \param bs the block store object
+/// \param filename the file to link to
 ///
-size_t block_store_export(const block_store_t *const bs, const char *const filename);
+void block_store_link(block_store_t *const bs, const char *const filename);
+
+///
+/// Unlinks and closes the file (if any) associated with the block store
+///  NOTE: If a flush is requested, it will only be ATTEMPTED.
+///   If the flush fails for ANY reason, the file will still be unlinked and
+///   If a flush is requested, the bs_errno will be set to the status of the flush operation
+/// \param bs the block store object
+/// \param flush flag indicating where a flush should be attempted before unlink
+///
+void block_store_unlink(block_store_t *const bs, const bs_flush_flag flush);
+
+///
+/// Flushes changes to the block store to the linked file
+/// \param bs the block store object
+///
+void block_store_flush(block_store_t *const bs);
 
 ///
 /// Returns a string representing the error code given
 /// \param bs_err Error status code
 /// \return C-string with error message
 ///
-const char *block_store_strerror(block_store_status bs_err);
+const char *block_store_strerror(bs_status bs_err);
+
 
 /*
-    V2:
-    size_t block_store_flush(block_store_t *const bs);
-    export -> size_t block_store_associate(link?)(block_store_t *const bs, const char * const filename);
-    size_t block_store_request(block_store_t *const bs);
-*/
+    // PIT OF DEPRECATION:
 
+    ///
+    /// DEPRECATED
+    /// Writes the entirety of the BS device to file, overwriting it if it exists
+    /// \param bs BS device
+    /// \param filename The file to write to
+    /// \return Number of bytes written, 0 on error
+    ///
+    size_t block_store_export(const block_store_t *const bs, const char *const filename);
+*/
 
 #endif
