@@ -246,8 +246,18 @@ bool dyn_array_insert_sorted(dyn_array_t *const dyn_array, const void *const obj
 /// Applies the given function to every object in the array
 /// \param dyn_array the dynamic array
 /// \param func the function to apply
-/// \return bool representing success of the operation
+/// \return bool representing success of the operation (really just pointer and size checks)
 ///
 bool dyn_array_for_each(dyn_array_t *const dyn_array, void (*func)(void *const));
+
+///
+/// Applies the given function to every obejct in the array
+/// (with an additional parameter for your use)
+/// \param dyn_array the dynamic array
+/// \param func the function to apply
+/// \param additional_data additional data that will be provided to the supplied function (as parameter 2)
+/// \return bool representing success of operation (really just pointer and size checks)
+///
+bool dyn_array_for_each_extended(dyn_array_t *const dyn_array, void (*func)(void * const, void *), void * additional_data);
 
 #endif

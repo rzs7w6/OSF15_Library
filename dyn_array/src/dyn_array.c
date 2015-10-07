@@ -266,6 +266,30 @@ bool dyn_array_for_each(dyn_array_t *const dyn_array, void (*func)(void *const))
     return false;
 }
 
+// too bad we can't make the other just call this and somehow optionally NOT pass the secnd param.
+// well, we CAN do that, but in no efficient/non-gross manner
+// Freaking name mangling, or, I suppose, lack thereof.
+// I don't like this function name. But I don't want to force the other for each to be this one.
+// UGGGHHHHHHHHHHHHHH THIS IS JUST A ONE LINE CHANGE FUNCTION
+bool dyn_array_for_each_extended(dyn_array_t *const dyn_array, void (*func)(void * const, void *), void * additional_data) {
+    if (dyn_array && dyn_array->array && func) {
+        // So I just noticed we never check the data array ever
+        // Which is both unsafe and potentially undefined behavior
+        // Although we're the only ones that touch the pointer and we always validate it.
+        // So it's questionable. We'll check it here.
+        // I'm considering taking these out. Anything under our control that touches this pointer is safe
+        // Not checking it will segfault, which is good for debugging, but not so much for the end user
+        // but good for the tester. But the tester may not trigger this if it's a crazy edge case.
+        // HMMMMMMMMM.
+        uint8_t *data_walker = (uint8_t *)dyn_array->array;
+        for (size_t idx = 0; idx < dyn_array->size; ++idx, data_walker += dyn_array->data_size) {
+            func((void *const) data_walker, additional_data);
+        }
+        return true;
+    }
+    return false;
+}
+
 
 /*
     // No return value. It either goes or it doesn't. shrink_to_fit is more of a request
