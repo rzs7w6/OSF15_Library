@@ -30,6 +30,7 @@ struct dyn_array {
 
 
 // Modes of operation for dyn_shift
+// TODO: rename these, their names have gotten a little inaccurate since it's eaten more functions
 typedef enum {CREATE_GAP = 0x01, FILL_GAP = 0x02, FILL_GAP_DESTRUCT = 0x06} DYN_SHIFT_MODE;
 
 // The core of any insert/remove operation, check the impl for details
