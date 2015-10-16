@@ -171,6 +171,14 @@ void dyn_core_purge(dyn_list_t *const dyn_list, node_t *begin, node_t *end, cons
         dyn_list->size -= count; // COUNT = CORRECTED, LIST IN BAD STATE
         begin->prev->next = end->next; // BEGIN UNLINKED AND RE-ROUTED, LIST CANNOT BE BACK-TRAVERSED CORRECTLY, LIST IN BAD STATE
         end->next->prev = begin->prev; // END UNLINKED AND RE-ROUTED, LIST IN GOOD STATE
+
+        // Start killing unlinked nodes
+        node_t *backup = begin->next;
+        do {
+            free(begin);
+            begin = backup;
+            backup = begin->next;
+        } while (begin != end);
     }
 
 }
