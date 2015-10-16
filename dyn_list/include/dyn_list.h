@@ -43,3 +43,36 @@ dyn_list_t *dyn_list_import(const void *const data, const size_t count, const si
 bool dyn_array_export(const dyn_array_t *const dyn_array, void *data);
 
 void dyn_list_destroy(dyn_list_t *const dyn_list);
+
+push_front
+pop_front
+extract_front
+
+push_back
+pop_back
+extract_back
+
+insert
+extract
+remove
+at
+
+itr_insert // insert at position, iterator does not change, prev of node does
+itr_extract // removes itr, position gets incremented
+itr_remove // removes itr, position gets incremented
+itr_at // just returns pointer of itr'd data (rooted = NULL)
+
+itr_create // take list and desired position? itr_begin itr_end itr_at itr_create(rooted)?
+itr_destroy
+itr_reset
+itr_rooted // need better name, detect if itr at root (is reset/taversal complete)
+itr_inc
+itr_dec // merge the two?
+itr_distance // check backwards or return SIZE_MAX if begin after end?
+itr_equal // same as distance == 0, which short circuits distance, but if not eq, would trigger full distance hunt
+
+sort
+splice
+merge
+remove_if/prune
+for_each
