@@ -15,9 +15,11 @@ struct dyn_list {
 /*
     Root connects to the two ends, BUT THE TWO ENDS ALSO CONNECT TO ROOT. It makes relinking faster, and NO LINK IS EVER NULL
     Root, when empty, should point to itself at both ends. PREFER SIZE CHECK TO LINK CHECK
+        Cores will prevent circular link issues with size checks before starting, complex functions should do the same
 
-    There is a vital test in the test folder. It will assert that the relative offset of root's back and front are the same
+    There is a VITAL test in the test folder. It will assert that the relative offset of root's back and front are the same
     as the node relative offsets. This way, root can be cast to a node and not cause a freakout, and that the circular link is fine
+    // TODO: Find a way to force cmake to run this test on install
 
     Not going to store the size and destructor in the nodes because that's a major waste of space, though it is a little more restrictive
     The list-who-shall-not-be-named (hetero_list) will be interesting and allow varying size and destructors
@@ -29,6 +31,10 @@ struct dyn_list {
 // So, if node gets padded somehow, we'll avoid the disaster case of us just going crazy, but we will waste the padded space
 // ...but isn't padding meant to be wasted?
 #define DATA_POINTER(node_ptr) (void *) ((node_ptr + 1)))
+
+
+// CORE FUNCTIONS. They are what they sound like, core functions.
+// They do intense checks, so if you're a thin wrapper, do only what needs to be done to construct your core call
 
 // Does what it sounds like, inserts count objects from data_src at position
 // False on parameter or malloc failure
@@ -50,8 +56,9 @@ node_t *dyn_core_locate(const dyn_list_t *const dyn_list, const size_t position)
     But the complex functions (sort, prune, map/transform) would end up just being a wrapper of the dyn_core version
         Which seems like a dumb level of indirection
 
-    So, for now, just call DATA_POINTER on the locate... ocne you've check locate didn't NULL on you
+    So, for now, just call DATA_POINTER on the locate... once you've checked locate didn't NULL on you
         Maybe a locate_data would be better, even if it's just sticking the two together (inline!)
+        So what's better, a function call to a function call, or duplicate functions? Ugh, neither?
 
     // Hunts down the data pointer at the requested node, NULL on parameter issue
     void *dyn_core_locate_data(const dyn_list_t *const dyn_list, const size_t position);
@@ -76,42 +83,48 @@ dyn_list_t *dyn_list_create(const size_t data_type_size, void (*destruct_func)(v
 dyn_list_t *dyn_list_import(const void *const data, const size_t count, const size_t data_type_size, void (*destruct_func)(void *)) {
     dyn_list_t dyn_list = dyn_list_create(data_type_size, destruct_func);
     if (dyn_list) {
-        // Sorry, lied about the const because core can't handle a const pointer without making it take two, or just de-consting it there
-        // dyn_array has to do this, too. I don't like it. A single wasted pointer on the stack can't be that bad.
-        // TODO: Figure out what to do with this const casting
-        if (! dyn_core(dyn_list, 0, count, INSERT, (void *const)data)) {
-            // eww, a jump on the normal path. BOOOOOOOOOOoooooooooooooooo
-            dyn_list_destroy(dyn_list);
+        if (dyn_core_insert(dyn_list, 0, count, data)) {
+            return dyn_list;
+        }
+        dyn_list_destroy(dyn_list);
+    }
+    return NULL;
+}
+
+
+bool dyn_array_export(const dyn_array_t *const dyn_array, void *data) {
+    // Uhh, I guess this counts as a "complex" function since dyn_core can't really save us here
+    //   Unless we extract, killing the list, and then do an import and an insert, haha
+    if (dyn_array && data && dyn_array->size) {
+        // extra statement? Yes, but it allows the compiler to make (valid) assumptions
+        //  But we have optimizations off anyway... That should be changed for "working" libraries
+        // TODO: Tinker with optimizations in the libraries, only have the testers be O0'd?
+        /*
+            Whoops, just realized dyn_array is const'd. This shouldn't be needed?
+            TODO: Check assembly for const optimization on loop condition
+            const size_t size = dyn_array->size;
+            const size_t data_size = dyn_array->data_size;
+        */
+        // Ok, what do? make data a uint8_t or leave it void?
+        // Having it be void is nice because who cares about the type
+        // But having it be a byte is nice because pointer math on void is a no-no and that's annoying as hell
+        // and having a duplicate pointer that is just it but casted is dumb
+        // DECISION: Implicit casting to void isn't a warning, but implicit casting of something to something else is
+        // Hell, I mght just make a macro that increments a void pointer by n bytes
+        node_t *itr = dyn_array->front;
+        for (size_t count = 0; count < size; ++count,
+                data = (void *)(((uint8_t *)data) + dyn_array->data_size), // THIS IS DUMB AND I HATE IT >:C
+                itr = itr->next) {
+            memcpy(data, DATA_POINTER(itr), dyn_array->data_size);
         }
     }
-    return dyn_list;
 }
 
 void dyn_list_destroy(dyn_list_t *const dyn_list) {
-    // it was ok to do a double pass with dyn_array, but we're not contiguous,
-    //  so two traversals is kinda gross
-    // But an if in the inner loop is also gross.
-    // But an if selecting two nearly-idential loops is also gross
-    // ...Two loops, but the first makes an array of pointers, hahaha.
-    //    A destructor that mallocs is gross and weird
-
-    // TODO: Get smarter and find a better way to do this
-    // TODO: Also, probably aggregate this somewhere because clear will want a copy
     if (dyn_list) {
-        // technically the for will do this as well, but with less work
-        // ...but more work in the average (we have contents) case... HMMMMM
-        // TODO: Be better
-        if (dyn_list->size) {
-            for (node_t *itr = dyn_list->front, *ptr_to_free = itr;
-                    itr != (node_t *const)dyn_list;
-                    itr = itr->next, ptr_to_free = itr) {
-                if (dyn_list->destructor) {
-                    dyn_list->destructor(DATA_POINTER(itr));
-                }
-                // Uhh, gotta shift the pointer but also free it. Hmmmm
-                free(ptr_to_free);
-            }
-        }
+        dyn_core_deconstruct(dyn_list, dyn_list->size);
+        // deconstruct only fails on NULL, or zero size
+        // and neither of those are a threat to free
         free(dyn_list);
     }
 }
@@ -170,7 +183,7 @@ node_t *dyn_core_locate(const dyn_list_t *const dyn_list, const size_t position)
         // for(distance = front_half? position : size - position;distance;distance--)
         // itr = ((node_t*)itr)[offset]
         // In a perfect world where I have time to do things, I'd test which is better
-        // Becuse that sounds neat, but that addition sounds hmmmm
+        // Becuse that sounds neat, but that indexing sounds expensive vs a direct lookup
         // Screw it, let's do something cool.
 
         int offset = (position <= dyn_list->size >> 1) ? 1 : 0;
