@@ -8,6 +8,8 @@
 
 typedef struct dyn_list dyn_list_t;
 
+typedef struct dyn_list_itr dyn_list_itr_t;
+
 
 // push/pop/extract front/back
 // extract/erase/at(?)
@@ -37,6 +39,7 @@ dyn_list_t *dyn_list_import(const void *const data, const size_t count, const si
 // I am NOT adding another errno because ehhhhhhh
 // Think it's best to just say "Content of data array not guarenteed on error"
 // and return data as well on success. Uhh... bool? I forgot about bools.
-void *dyn_array_export(const dyn_array_t *const dyn_array, void *data);
+// Cannot fail on correct parameters
+bool dyn_array_export(const dyn_array_t *const dyn_array, void *data);
 
 void dyn_list_destroy(dyn_list_t *const dyn_list);

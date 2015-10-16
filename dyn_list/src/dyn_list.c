@@ -11,6 +11,11 @@ struct dyn_list {
     void (*destructor)(void *const);
 };
 
+// it's a list. It benefits from an iterator. The number of functions just doubled. Ugh.
+struct dyn_list_itr {
+    node_t *root, curr;
+};
+
 // Since I can't scan my notes and attach it here...
 /*
     Root connects to the two ends, BUT THE TWO ENDS ALSO CONNECT TO ROOT. It makes relinking faster, and NO LINK IS EVER NULL
