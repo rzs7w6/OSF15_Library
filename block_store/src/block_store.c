@@ -113,7 +113,7 @@ void block_store_destroy(block_store_t *const bs, const bs_flush_flag flush) {
     if (bs) {
         // If we aren't linked, no problem
         // If we ARE, flush if they asked AND unlink
-        block_store_unlink(bs, BS_FLUSH);
+        block_store_unlink(bs, flush);
 
         bitmap_destroy(bs->fbm);
         bitmap_destroy(bs->dbm);
