@@ -70,7 +70,7 @@ typedef enum {
 ///
 /// This is our errno... it's an errno.
 ///
-bs_status bs_errno = BS_OK;
+static bs_status bs_errno = BS_OK;
 
 ///
 /// This creates a new BS device
