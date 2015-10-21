@@ -3,8 +3,12 @@
 // Overriding these will probably break it since I'm not testing it that much
 // It probably won't go crazy so long as the sizes are reasonable and powers of two
 // Touching these will void your warranty
-#define BLOCK_COUNT 65536
-#define BLOCK_SIZE 1024
+#ifndef BLOCK_COUNT
+    #define BLOCK_COUNT 65536
+#endif
+#ifndef BLOCK_SIZE
+    #define BLOCK_SIZE 1024
+#endif
 #define FBM_BLOCK_COUNT ((BLOCK_COUNT >> 3) / BLOCK_SIZE)
 #define DATA_BLOCK_COUNT (BLOCK_COUNT - FBM_BLOCK_COUNT)
 #if (((FBM_BLOCK_COUNT * BLOCK_SIZE) << 3) != BLOCK_COUNT)
