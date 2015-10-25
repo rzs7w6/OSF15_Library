@@ -180,11 +180,12 @@
         4. FAIL, empty array
         5. FAIL, null comparator
 
-    bool dyn_array_for_each(dyn_array_t *const dyn_array, void (*func)(void *const));
+    bool dyn_array_for_each(dyn_array_t *const dyn_array, void (*func)(void *const), void * arg);
         1. NORMAL, contents
         2. NORMAL, empty
-        3. FAIL, null array
-        4. FAIL, null func
+        3. NORMAL, null arg
+        4. FAIL, null array
+        5. FAIL, null func
 */
 
 // Shamelessly stolen from
@@ -212,8 +213,11 @@ void block_destructor_mini(void *block) {
 }
 
 int for_each_counter = 0;
-void block_for_each(void *block) {
-    ++for_each_counter;
+void block_for_each(void *const block, void *num) {
+    if (num)
+        for_each_counter += *((int *)num);
+    else
+        for_each_counter += 10;
 }
 
 int block_compare(const void *const a, const void *const b) {
@@ -1101,26 +1105,36 @@ void run_basic_tests_e() {
 
     dyn_array_clear(dyn_a);
 
-    // FOR_EACH 2
-    assert(dyn_array_for_each(dyn_a, &block_for_each));
+    int num = 1;
 
-    // FOR_EACH 3
-    assert(dyn_array_for_each(NULL, &block_for_each) == false);
+    // FOR_EACH 2
+    for_each_counter = 0;
+    assert(dyn_array_for_each(dyn_a, &block_for_each, &num));
+    assert(for_each_counter == 0);
 
     // FOR_EACH 4
-    assert(dyn_array_for_each(dyn_a, NULL) == false);
+    assert(dyn_array_for_each(NULL, &block_for_each, &num) == false);
+
+    // FOR_EACH 5
+    assert(dyn_array_for_each(dyn_a, NULL, &num) == false);
 
     assert(dyn_array_insert_sorted(dyn_a, DATA_BLOCKS[0], &block_compare));
 
     // FOR EACH 1
-    assert(dyn_array_for_each(dyn_a,&block_for_each));
+    assert(dyn_array_for_each(dyn_a, &block_for_each, &num));
     assert(for_each_counter == 1);
 
     assert(dyn_array_insert_sorted(dyn_a, DATA_BLOCKS[1], &block_compare));
+
     for_each_counter = 0;
 
-    assert(dyn_array_for_each(dyn_a,&block_for_each));
+    assert(dyn_array_for_each(dyn_a, &block_for_each, &num));
     assert(for_each_counter == 2);
+
+    // FOR_EACH 3
+    for_each_counter = 0;
+    assert(dyn_array_for_each(dyn_a, &block_for_each, NULL));
+    assert(for_each_counter == 20);
 
     // FOR EACH tested and cleared for use
 

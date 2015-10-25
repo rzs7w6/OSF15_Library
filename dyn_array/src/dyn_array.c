@@ -38,7 +38,7 @@ bool dyn_shift(dyn_array_t *const dyn_array, const size_t position, const size_t
 
 dyn_array_t *dyn_array_create(const size_t capacity, const size_t data_type_size, void (*destruct_func)(void *)) {
     if (data_type_size && capacity <= DYN_MAX_CAPACITY) {
-        dyn_array_t *dyn_array =  (dyn_array_t *) malloc(sizeof(dyn_array_t));
+        dyn_array_t *dyn_array = (dyn_array_t *) malloc(sizeof(dyn_array_t));
         if (dyn_array) {
             // would have inf loop if requested size was between DYN_MAX_CAPACITY
             // and SIZE_MAX
@@ -251,15 +251,19 @@ bool dyn_array_insert_sorted(dyn_array_t *const dyn_array, const void *const obj
 }
 
 
-bool dyn_array_for_each(dyn_array_t *const dyn_array, void (*func)(void *const)) {
+bool dyn_array_for_each(dyn_array_t *const dyn_array, void (*func)(void *const, void *), void *arg) {
     if (dyn_array && dyn_array->array && func) {
         // So I just noticed we never check the data array ever
         // Which is both unsafe and potentially undefined behavior
         // Although we're the only ones that touch the pointer and we always validate it.
         // So it's questionable. We'll check it here.
+        // I'm considering taking these out. Anything under our control that touches this pointer is safe
+        // Not checking it will segfault, which is good for debugging, but not so much for the end user
+        // but good for the tester. But the tester may not trigger this if it's a crazy edge case.
+        // HMMMMMMMMM...
         uint8_t *data_walker = (uint8_t *)dyn_array->array;
         for (size_t idx = 0; idx < dyn_array->size; ++idx, data_walker += dyn_array->data_size) {
-            func((void *const) data_walker);
+            func((void *const) data_walker, arg);
         }
         return true;
     }
@@ -281,13 +285,13 @@ bool dyn_array_for_each(dyn_array_t *const dyn_array, void (*func)(void *const))
 */
 
 
-//
-///
-// BELOW HERE BE DRAGONS
-///
-//
 
 
+//
+///
+// HERE BE DRAGONS
+///
+//
 
 
 // Checks to see if the object can handle an increase in size (and optionally increases capacity)
@@ -419,3 +423,26 @@ bool dyn_request_size_increase(dyn_array_t *const dyn_array, const size_t increm
     }
     return false;
 }
+
+//
+///
+// HERE BE DEAD DRAGONS
+///
+//
+
+/*
+    bool dyn_array_for_each(dyn_array_t *const dyn_array, void (*func)(void *const)) {
+        if (dyn_array && dyn_array->array && func) {
+            // So I just noticed we never check the data array ever
+            // Which is both unsafe and potentially undefined behavior
+            // Although we're the only ones that touch the pointer and we always validate it.
+            // So it's questionable. We'll check it here.
+            uint8_t *data_walker = (uint8_t *)dyn_array->array;
+            for (size_t idx = 0; idx < dyn_array->size; ++idx, data_walker += dyn_array->data_size) {
+                func((void *const) data_walker);
+            }
+            return true;
+        }
+        return false;
+    }
+*/

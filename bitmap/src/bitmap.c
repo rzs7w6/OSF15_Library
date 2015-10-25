@@ -117,11 +117,11 @@ size_t bitmap_total_set(const bitmap_t *const bitmap) {
     return total;
 }
 
-void bitmap_for_each(const bitmap_t *const bitmap, void (*func)(size_t, void *), void *args) {
+void bitmap_for_each(const bitmap_t *const bitmap, void (*func)(size_t, void *), void *arg) {
     if (bitmap && func) {
         for (size_t idx = 0; idx < bitmap->bit_count; ++idx) {
             if (bitmap_test(bitmap, idx)) {
-                func(idx, args);
+                func(idx, arg);
             }
         }
     }

@@ -77,7 +77,7 @@ size_t bitmap_total_set(const bitmap_t *const bitmap);
 /// \param func The function to apply (first parameter will be size_t with the bit number)
 /// \param args A generic pointer to pass to the called function
 ///
-void bitmap_for_each(const bitmap_t *const bitmap, void (*func)(size_t, void *), void *args);
+void bitmap_for_each(const bitmap_t *const bitmap, void (*func)(size_t, void *), void *arg);
 
 ///
 /// Resets bitmap contents to the desired pattern
