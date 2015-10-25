@@ -174,6 +174,25 @@ bool block_store_request(block_store_t *const bs, const size_t block_id) {
 }
 
 
+size_t block_store_get_used_blocks(const block_store_t *const bs) {
+    if (bs) {
+        return bitmap_total_set(bs->fbm) - FBM_BLOCK_COUNT; // stupid total_set undoes our FBM negation in total
+    }
+    return 0;
+}
+
+size_t block_store_get_free_blocks(const block_store_t *const bs) {
+    if (bs) {
+        return BLOCK_COUNT - bitmap_total_set(bs->fbm);
+    }
+    return 0;
+}
+
+size_t block_store_get_total_blocks() {
+    return BLOCK_COUNT - FBM_BLOCK_COUNT;
+}
+
+
 void block_store_release(block_store_t *const bs, const size_t block_id) {
     if (bs && BLOCKID_VALID(block_id)) {
         // we could clear the dirty bit, since the info is no longer in use but...

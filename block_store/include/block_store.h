@@ -104,6 +104,27 @@ size_t block_store_allocate(block_store_t *const bs);
 bool block_store_request(block_store_t *const bs, const size_t block_id);
 
 ///
+/// Counts the number of blocks marked as in use by the user
+/// \param bs BS device
+/// \return Total blocks in use, 0 on error
+///
+size_t block_store_get_used_blocks(const block_store_t *const bs);
+
+///
+/// Counts the number of blocks marked free for use
+/// (lie: calls used and inverts it because of bitmap limitation)
+/// \param bs BS device
+/// \return Total blocks free, 0 on error
+///
+size_t block_store_get_free_blocks(const block_store_t *const bs);
+
+///
+/// Returns the total number of user-addressable blocks
+/// \return Total blocks
+///
+size_t block_store_get_total_blocks();
+
+///
 /// Frees the specified block
 /// \param bs BS device
 /// \param block_id The block to free

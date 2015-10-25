@@ -27,6 +27,21 @@
     2. FAIL, Fail on full, check errno
     3. FAIL, null bs, check errno
 
+    size_t block_store_get_used_blocks(const block_store_t *const bs);
+    1. NORMAL, empty
+    2. NORMAL, some
+    3. NORMAL, full
+    2. FAIL, NULL
+
+    size_t block_store_get_free_blocks(const block_store_t *const bs);
+    1. NORMAL, empty
+    2. NORMAL, some
+    3. NORMAL, full
+    2. FAIL, NULL
+
+    size_t block_store_get_total_blocks();
+    1. NORMAL ... cannot fail (for now)
+
     void block_store_release(block_store_t *const bs, const size_t block_id);
     1. NORMAl, assert FBM/DBM and errno
     2. FAIL, reserved block, assert fbm/sbm/errno
@@ -81,7 +96,7 @@
 
 */
 
-// ALLOCATE RELEASE CREATE DESTROY(NON-SPECIAL)
+// ALLOCATE RELEASE CREATE DESTROY(NON-SPECIAL) GET_USED GET_FREE GET_TOTAL
 void basic_tests_a();
 
 // IMPORT EXPORT
@@ -139,6 +154,13 @@ void basic_tests_a() {
         assert(bitmap_test(bs_a->dbm, i));
     }
 
+    // GET_USED GET_FREE GET_TOTAL 1
+    assert(block_store_get_total_blocks() == BLOCK_COUNT - FBM_BLOCK_COUNT);
+    assert(block_store_get_used_blocks(bs_a) == 0);
+    assert(block_store_get_free_blocks(bs_a) == BLOCK_COUNT - FBM_BLOCK_COUNT);
+
+    // GET_TOTAL tested and cleared for use
+
     // ALLOCATE 1
 
     // Check allocate up to full & fail
@@ -154,6 +176,10 @@ void basic_tests_a() {
         assert(bitmap_test(bs_a->dbm, FBM_BLOCK_CHANGE_LOCATION(i)));
     }
 
+    // GET_USED GET_FREE 3
+    assert(block_store_get_free_blocks(bs_a) == 0);
+    assert(block_store_get_used_blocks(bs_a) == block_store_get_total_blocks());
+
     // ALLOCATE 2
 
     assert(block_store_allocate(bs_a) == 0);
@@ -163,6 +189,12 @@ void basic_tests_a() {
 
     block_store_release(bs_a, (BLOCK_COUNT >> 3) + 5);
     assert(bs_errno == BS_OK);
+
+    // GET_USED GET_FREE 2
+    assert(block_store_get_free_blocks(bs_a) == 1);
+    assert(block_store_get_used_blocks(bs_a) == block_store_get_total_blocks() - 1);
+
+    // GET_USED AND GET_FREE tested and cleared
 
     assert(bitmap_test(bs_a->fbm, (BLOCK_COUNT >> 3) + 5) == false);
     assert(bitmap_test(bs_a->dbm, (BLOCK_COUNT >> 3) + 5));
@@ -588,6 +620,6 @@ void basic_tests_d() {
 
     // FLush tested and clear for use (?)
 
-    system("rm test.bs");
+    system("rm test.bs new_test.bs");
 
 }
