@@ -26,7 +26,7 @@ Current libraries:
 		    - Dyn's core already supports this, the API doesn't.
 		    	- I didn't want to write more unit tests...
 
-- block_store (v2.0)
+- block_store (v2.0.1)
 	- Generic in-memory block storage system with optional file linking
 	- Wishlist:
 		- Better testing. Flush testing is a little lighter than I'd like, but I'm tired of looking at it
