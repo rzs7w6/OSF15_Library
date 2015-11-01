@@ -38,6 +38,8 @@ size_t utility_read_file(const int fd, uint8_t *buffer, const size_t count);
 
 size_t utility_write_file(const int fd, const uint8_t *buffer, const size_t count);
 
+// The errno. Accessed by the block_store_errno function
+bs_status bs_errno = BS_OK;
 
 // Flags, yay!
 // Most won't be used (yet)
@@ -434,6 +436,11 @@ const char *block_store_strerror(bs_status bs_err) {
         default:
             return "???";
     }
+}
+
+
+bs_status block_store_errno() {
+    return bs_errno;
 }
 
 

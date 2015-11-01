@@ -184,6 +184,7 @@ void basic_tests_a() {
 
     assert(block_store_allocate(bs_a) == 0);
     assert(bs_errno == BS_FULL);
+    assert(bs_errno == block_store_errno()); // Tiny test to validate that the two are in sync
 
     // Arbitrary release and reallocate
 

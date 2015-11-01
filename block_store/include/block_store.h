@@ -63,15 +63,6 @@ typedef enum {
     BS_FLUSH = 0x01
 } bs_flush_flag;
 
-// All our functions return 0 on error instead of -1 because I didn't want to switch to ssize_t
-// because I ddin't want to lose that bit, and most functions have no reason to return 0
-// It also simplifies a bit when you pretend negative numbers don't exist
-
-///
-/// This is our errno... it's an errno.
-///
-static bs_status bs_errno = BS_OK;
-
 ///
 /// This creates a new BS device
 /// \return Pointer to a new block storage device, NULL on error
@@ -194,9 +185,22 @@ void block_store_flush(block_store_t *const bs);
 ///
 const char *block_store_strerror(bs_status bs_err);
 
+///
+/// Returns the current errno, check out the enum and strerror
+/// \return Current error
+///
+bs_status block_store_errno();
+
 
 /*
     // PIT OF DEPRECATION:
+
+	/// OH MAN THIS BROKE EVERYTHING AND I NEVER NOTICED AND I AM BAD A COMPUTERS
+	///
+	/// This is our errno... it's an errno.
+	///
+	static bs_status bs_errno = BS_OK;
+
 
     ///
     /// DEPRECATED
