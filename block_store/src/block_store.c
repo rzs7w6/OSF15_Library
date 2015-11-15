@@ -92,7 +92,7 @@ block_store_t *block_store_create() {
 
     block_store_t *bs = calloc(sizeof(block_store_t), 1);
     if (bs) {
-        if ((bs->data_blocks = calloc(BLOCK_SIZE, BLOCK_COUNT)) &&
+        if ((bs->data_blocks = calloc(BLOCK_COUNT, BLOCK_SIZE)) &&
                 // Eh, calloc, why not (technically a security risk if we don't)
                 (bs->fbm = bitmap_overlay(BLOCK_COUNT, bs->data_blocks)) &&
                 (bs->dbm = bitmap_create(BLOCK_COUNT))) {
